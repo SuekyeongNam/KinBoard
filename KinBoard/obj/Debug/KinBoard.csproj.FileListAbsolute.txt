@@ -1,0 +1,10 @@
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\bin\Debug\KinBoard.exe.config
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\bin\Debug\KinBoard.exe
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\bin\Debug\KinBoard.pdb
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\obj\Debug\KinBoard.csprojResolveAssemblyReference.cache
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\obj\Debug\KinBoard.Properties.Resources.resources
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\obj\Debug\KinBoard.csproj.GenerateResource.Cache
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\obj\Debug\KinBoard.exe
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\obj\Debug\KinBoard.pdb
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\obj\Debug\KinBoard.KinBoard.resources
+C:\Users\asuspc\Desktop\KinBoard\KinBoard\obj\Debug\KinBoard.csproj.ResolveComReference.cache
