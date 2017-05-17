@@ -18,6 +18,7 @@ namespace KinBoard
     {
         public static KinBoard _KinBoard;
         PPt.Application pptApp;
+        bool isRightHanded = true;
 
         public MainForm()
         {
@@ -46,11 +47,13 @@ namespace KinBoard
         private void LHandedBtn_Click(object sender, EventArgs e)
         {
             // For left-handed person
+            isRightHanded = false;
         }
 
         private void RHandedBtn_Click(object sender, EventArgs e)
         {
-            
+            // For right-handed person
+            isRightHanded = true;
         }
 
     }
