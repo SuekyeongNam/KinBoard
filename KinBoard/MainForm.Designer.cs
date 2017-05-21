@@ -52,15 +52,17 @@
             this.RHandedBtn.UseVisualStyleBackColor = true;
             this.RHandedBtn.Click += new System.EventHandler(this.RHandedBtn_Click);
             // 
-            // KinBoard
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(343, 112);
             this.Controls.Add(this.RHandedBtn);
             this.Controls.Add(this.LHandedBtn);
-            this.Name = "KinBoard";
+            this.Name = "MainForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "KinBoard";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.KinBoard_Load);
             this.ResumeLayout(false);
 
