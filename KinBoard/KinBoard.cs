@@ -12,18 +12,26 @@ namespace KinBoard
 {
     public class KinBoard
     {
-        private int body_num = 0;
+        private List<Skeleton> skeletons;
         private KinectSensor kinectSensor = null;
         private BodyFrameReader bodyFrameReader = null;
         private Body[] bodies = null;
         private BodyFrame bodyFrame = null;
 
         public KinBoard() { OpenKinect(); }
+
+        // open Kinect
         public void OpenKinect()
         {
             this.kinectSensor = KinectSensor.GetDefault();
             this.kinectSensor.Open();
             this.bodyFrameReader = this.kinectSensor.BodyFrameSource.OpenReader();
+            BodyTracking();
+        }
+
+        // tracking body
+        public void BodyTracking()
+        {
             bodyFrame = bodyFrameReader.AcquireLatestFrame();
             if (bodyFrame != null)
             {
@@ -32,17 +40,10 @@ namespace KinBoard
                 {
                     if (bodies[i].IsTracked == true)
                     {
-                        for(int count = 0; count < 25; count++)
-                        {
-
-                        }
+                        
                     }
                 }
             }
-        }
-        public void BodyTracking()
-        {
-
         }
     }
     
