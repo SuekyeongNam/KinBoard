@@ -8,5 +8,14 @@ namespace KinBoard
 {
     class Action
     {
+        public Action()
+        {
+
+        }
+
+        public void compare()
+        {
+
+        }
     }
 }

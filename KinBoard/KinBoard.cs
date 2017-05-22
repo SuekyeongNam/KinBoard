@@ -17,8 +17,12 @@ namespace KinBoard
         private BodyFrameReader bodyFrameReader = null;
         private Body[] bodies = null;
         private BodyFrame bodyFrame = null;
+        Action action = null;
 
-        public KinBoard() { OpenKinect(); }
+        public KinBoard() {
+            OpenKinect();
+            action = new Action();
+        }
 
         // open Kinect
         public void OpenKinect()
@@ -26,6 +30,7 @@ namespace KinBoard
             this.kinectSensor = KinectSensor.GetDefault();
             this.kinectSensor.Open();
             this.bodyFrameReader = this.kinectSensor.BodyFrameSource.OpenReader();
+
             BodyTracking();
         }
 
@@ -36,11 +41,19 @@ namespace KinBoard
             if (bodyFrame != null)
             {
                 bodyFrame.GetAndRefreshBodyData(bodies);
+                if(bodies.Length != skeletons.Count)
+                {
+                    Skeleton temp = null;
+                    temp.set_id(bodies.Length - 1);
+                    skeletons.Add(temp);
+                }
                 for (int i = 0; i < bodies.Length; i++)
                 {
                     if (bodies[i].IsTracked == true)
                     {
                         skeletons[i].set_body(bodies[i]);
+                        skeletons[i].set_hand_state(bodies[i].HandRightState, bodies[i].HandLeftState);
+                        action.compare(); // 동작 판단 함수
                     }
                 }
             }

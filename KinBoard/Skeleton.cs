@@ -35,12 +35,21 @@ using Microsoft.Kinect;
     •ThumbRight 
 */
 
+/* Hand State num
+    Unknown = 0,
+    NotTracked = 1,
+    Open = 2,
+    Closed = 3,
+    Lasso = 4 
+*/
+
 namespace KinBoard
 {
     public class Skeleton
     {
         private int id;
-        private int hand_state;
+        private HandState right_hand_state;
+        private HandState left_hand_state;
         private Queue<Body> bodies;
 
         public Skeleton() { }
@@ -60,6 +69,22 @@ namespace KinBoard
         public void set_body(Body temp)
         {
             bodies.Enqueue(temp);
+            if(bodies.Count > 10)
+            {
+                bodies.Dequeue();
+                
+            }
+        }
+        
+        public void set_id(int num)
+        {
+            id = num;
+        }
+
+        public void set_hand_state(HandState Rstate, HandState Lstate)
+        {
+            right_hand_state = Rstate;
+            left_hand_state = Lstate;
         }
 
     }
