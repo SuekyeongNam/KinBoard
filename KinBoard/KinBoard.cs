@@ -32,7 +32,10 @@ namespace KinBoard
                 {
                     if (bodies[i].IsTracked == true)
                     {
+                        for(int count = 0; count < 25; count++)
+                        {
 
+                        }
                     }
                 }
             }
