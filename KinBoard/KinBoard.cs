@@ -40,7 +40,7 @@ namespace KinBoard
                 {
                     if (bodies[i].IsTracked == true)
                     {
-                        
+                        skeletons[i].set_body(bodies[i]);
                     }
                 }
             }
