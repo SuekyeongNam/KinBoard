@@ -41,18 +41,25 @@ namespace KinBoard
     {
         private int id;
         private int hand_state;
-        private Body body;
+        private Queue<Body> bodies;
 
         public Skeleton() { }
 
         public Body get_body()
         {
-            return body;
+            Body temp = null;
+
+            if(bodies.Count != 0)
+            {
+                temp = bodies.ElementAt(bodies.Count);
+            }
+            
+            return temp;
         }
 
         public void set_body(Body temp)
         {
-            body = temp;
+            bodies.Enqueue(temp);
         }
 
     }
