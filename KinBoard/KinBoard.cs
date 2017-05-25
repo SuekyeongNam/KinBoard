@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using OpenCvSharp.CPlusPlus;
 using OpenCvSharp;
 using Microsoft.Kinect;
-
+using LightBuzz.Vitruvius.FingerTracking;
 
 
 namespace KinBoard
