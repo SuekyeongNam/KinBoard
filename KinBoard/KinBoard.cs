@@ -39,6 +39,12 @@ namespace KinBoard
             BodyTracking();
         }
 
+        // hand change
+        public void chand_hand(int num)
+        {
+            whichHand = num;
+        }
+
         // tracking body
         public void BodyTracking()
         {

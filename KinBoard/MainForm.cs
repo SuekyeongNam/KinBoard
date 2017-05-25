@@ -56,12 +56,14 @@ namespace KinBoard
         {
             // For left-handed person
             isRightHanded = false;
+            _KinBoard.chand_hand(1);
         }
 
         private void RHandedBtn_Click(object sender, EventArgs e)
         {
             // For right-handed person
             isRightHanded = true;
+            _KinBoard.chand_hand(0);
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
