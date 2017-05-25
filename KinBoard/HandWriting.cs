@@ -30,13 +30,13 @@ namespace KinBoard
         //    isRightHanded = _isRightHanded;
         //}
 
-        private void Pen()
+        public void Pen()
         {
             slideShowView.PointerColor.RGB = Convert.ToInt32("FF0000", 16);
             slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerPen;
         }
 
-        private void Erase()
+        public void Erase()
         {
             slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerEraser;
         }

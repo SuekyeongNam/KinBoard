@@ -8,6 +8,7 @@ using OpenCvSharp;
 using Microsoft.Kinect;
 
 
+
 namespace KinBoard
 {
     public class KinBoard
@@ -18,10 +19,14 @@ namespace KinBoard
         private Body[] bodies = null;
         private BodyFrame bodyFrame = null;
         Action action = null;
+        HandWriting hand_writing = null;
+
+        private int whichHand = 0; // right = 0, left = 1
 
         public KinBoard() {
             OpenKinect();
             action = new Action();
+            hand_writing = new HandWriting();
         }
 
         // open Kinect
@@ -53,7 +58,28 @@ namespace KinBoard
                     {
                         skeletons[i].set_body(bodies[i]);
                         skeletons[i].set_hand_state(bodies[i].HandRightState, bodies[i].HandLeftState);
-                        action.compare(); // 동작 판단 함수
+                        if(whichHand == 0) // 오른손잡이일 경우
+                        {
+                            if(bodies[i].HandRightState == HandState.Closed)
+                            {
+                                hand_writing.Pen(); // 필기 모드
+                            }
+                            else
+                            {
+                                action.compare(); // 동작 판단 함수
+                            }
+                        }
+                        else // 왼손잡이일 경우
+                        {
+                            if (bodies[i].HandLeftState == HandState.Closed)
+                            {
+                                hand_writing.Pen(); // 필기 모드
+                            }
+                            else
+                            {
+                                action.compare(); // 동작 판단 함수
+                            }
+                        }
                     }
                 }
             }
