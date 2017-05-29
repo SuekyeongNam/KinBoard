@@ -64,11 +64,27 @@ namespace KinBoard
                     {
                         skeletons[i].set_body(bodies[i]);
                         skeletons[i].set_hand_state(bodies[i].HandRightState, bodies[i].HandLeftState);
-                        if(whichHand == 0) // 오른손잡이일 경우
+                        if (whichHand == 0) // 오른손잡이일 경우
                         {
-                            if(bodies[i].HandRightState == HandState.Closed)
+                            if (bodies[i].HandLeftState == HandState.Closed) // 펜 모드
                             {
-                                hand_writing.Pen(); // 필기 모드
+                                // 오른손가락 좌표 받아오기
+                                int x = (int)bodies[i].Joints[JointType.HandRight].Position.X;
+                                int y = (int)bodies[i].Joints[JointType.HandRight].Position.Y;
+                                // 마우스 커서 좌표 변경
+                                hand_writing.SetCursor(x, y);
+
+                                hand_writing.Pen();
+                            }
+                            else if (bodies[i].HandRightState == HandState.Closed)  // 지우개 모드
+                            {
+                                // 왼손가락 좌표 받아오기
+                                int x = (int)bodies[i].Joints[JointType.HandLeft].Position.X;
+                                int y = (int)bodies[i].Joints[JointType.HandLeft].Position.Y;
+                                // 마우스 커서 좌표 변경
+                                hand_writing.SetCursor(x, y);
+
+                                hand_writing.Erase();
                             }
                             else
                             {
@@ -77,9 +93,25 @@ namespace KinBoard
                         }
                         else // 왼손잡이일 경우
                         {
-                            if (bodies[i].HandLeftState == HandState.Closed)
+                            if (bodies[i].HandRightState == HandState.Closed)   // 펜 모드
                             {
-                                hand_writing.Pen(); // 필기 모드
+                                // 왼손가락 좌표 받아오기
+                                int x = (int)bodies[i].Joints[JointType.HandLeft].Position.X;
+                                int y = (int)bodies[i].Joints[JointType.HandLeft].Position.Y;
+                                // 마우스 커서 좌표 변경
+                                hand_writing.SetCursor(x, y);
+
+                                hand_writing.Pen();
+                            }
+                            else if (bodies[i].HandLeftState == HandState.Closed)   // 지우개 모드
+                            {
+                                // 오른손가락 좌표 받아오기
+                                int x = (int)bodies[i].Joints[JointType.HandRight].Position.X;
+                                int y = (int)bodies[i].Joints[JointType.HandRight].Position.Y;
+                                // 마우스 커서 좌표 변경
+                                hand_writing.SetCursor(x, y);
+
+                                hand_writing.Erase();
                             }
                             else
                             {
