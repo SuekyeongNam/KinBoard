@@ -30,7 +30,7 @@ namespace KinBoard
 
         public void Pen()
         {
-            slideShowView.PointerColor.RGB = Convert.ToInt32("FF0000", 16); // red
+            slideShowView.PointerColor.RGB = Convert.ToInt32("FF0000", 16); // red color
             slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerPen;
         }
 
