@@ -36,7 +36,7 @@ namespace KinBoard
             this.kinectSensor.Open();
             this.bodyFrameReader = this.kinectSensor.BodyFrameSource.OpenReader();
 
-            BodyTracking();
+            //BodyTracking();
         }
 
         // hand change
@@ -46,6 +46,7 @@ namespace KinBoard
         }
 
         // tracking body
+        /*
         public void BodyTracking()
         {
             bodyFrame = bodyFrameReader.AcquireLatestFrame();
@@ -117,6 +118,35 @@ namespace KinBoard
                             {
                                 action.compare(); // decide the action
                             }
+                        }
+                    }
+                }
+            }
+        }*/
+
+        private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
+        {
+            using (var frame = e.FrameReference.AcquireFrame())
+            {
+                if (frame != null)
+                {
+                    frame.GetAndRefreshBodyData(bodies);
+
+                    Body body = bodies.Where(b => b.IsTracked).FirstOrDefault();
+
+                    if (body != null)
+                    {
+                        Joint handRight = body.Joints[JointType.HandRight];
+
+                        if (handRight.TrackingState != TrackingState.NotTracked)
+                        {
+                            CameraSpacePoint handRightPosition = handRight.Position;
+                            ColorSpacePoint handRightPoint = kinectSensor.CoordinateMapper.MapCameraPointToColorSpace(handRightPosition);
+
+                            float x = handRightPoint.X;
+                            float y = handRightPoint.Y;
+
+                            
                         }
                     }
                 }
