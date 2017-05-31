@@ -11,9 +11,7 @@ namespace KinBoard
 {
     class Action
     {
-        //PPt.SlideShowSettings slideShowSettings;
-        //PPt.SlideShowView slideShowView;
-
+  
         private int finger_num;
 
         public Action()
@@ -50,7 +48,6 @@ namespace KinBoard
                 joint_array_R.Add(skeleton_i.get_RHandPoint(temp_count));
                 joint_array_L.Add(skeleton_i.get_LHandPoint(temp_count));
                 temp_count++;
-
             }
 
             //right hand coordinate
@@ -90,21 +87,21 @@ namespace KinBoard
                 //leftZ2 = joint_array_L[i + 1].Position.Z;
 
                 //check x change
-                if (rightX1 - rightX2 > 0)
+                if (rightX2 - rightX1 > 0)
                 {
                     check_x_R++;
                 }
-                else if (leftX1 - leftX2 > 0)
+                else if (leftX2 - leftX1 > 0)
                 {
                     check_x_L++;
                 }
 
                 //check y change
-                if (rightY1 - rightY2 > 0)
+                if (rightY2 - rightY1 > 0)
                 {
                     check_y_R++;
                 }
-                else if (leftY1 - leftY2 > 0)
+                else if (leftY2 - leftY1 > 0)
                 {
                     check_y_L++;
                 }
@@ -119,9 +116,10 @@ namespace KinBoard
                     check_z_L++;
                 }*/
             }
-            
+
             //return the motion num if the differentials match
-            if (check_x_R > 2)
+         //   MessageBox.Show(check_x_R.ToString());
+            if (check_x_R > 10)
             {
                 turnPage();
             }
@@ -140,9 +138,26 @@ namespace KinBoard
 
         void turnPage()
         {
-            //SlideShowWindow.View.Next;
-            //slideShowView.Next;
-            MessageBox.Show("인식");    
+         //   MessageBox.Show("인식");
+            MainForm.slideIndex = MainForm.slide.SlideIndex + 1;
+            if (MainForm.slideIndex > MainForm.slidescount)
+            {
+                MessageBox.Show("It is already last page");
+            }
+            else
+            {
+                try
+                {
+                    MainForm.slide = MainForm.slides[MainForm.slideIndex];
+                    MainForm.slides[MainForm.slideIndex].Select();
+                }
+                catch
+                {
+                    MainForm.pptApp.SlideShowWindows[1].View.Next();
+                    MainForm.slide = MainForm.pptApp.SlideShowWindows[1].View.Slide;
+                }
+            }
+            
         }
 
         void turnNPage(int finger_num)

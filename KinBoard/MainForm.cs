@@ -10,6 +10,7 @@ using Microsoft.Kinect;
 using OpenCvSharp.CPlusPlus;
 using KinBoard;
 
+
 // Add PowerPoint namespace
 using PPt = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
@@ -32,7 +33,18 @@ namespace KinBoard
         private int _height = 0;
         private byte[] _pixels = null;
 
-        PPt.Application pptApp;
+        
+        static public PPt.Application pptApp;
+        
+        static public PPt.Slides slides;
+        static public PPt.Slide slide;
+        static public PPt.Presentation presentation;
+        // Slide count
+        static public int slidescount;
+        // slide index
+        static public int slideIndex;
+        
+
         bool isRightHanded = true;
 
         public MainForm()
@@ -80,6 +92,25 @@ namespace KinBoard
             {
                 MessageBox.Show("[Error] PowerPoint file did not open!\nYou must open a file before running this program to use.", "Error", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
             }
+            if(pptApp != null)
+            {
+                // Get Presentation Object
+                presentation = pptApp.ActivePresentation;
+                // Get Slide collection object
+                slides = presentation.Slides;
+                // Get Slide count
+                slidescount = slides.Count;
+                try
+                {
+                    // Get selected slide object in normal view
+                    slide = slides[pptApp.ActiveWindow.Selection.SlideRange.SlideNumber];
+                }
+                catch
+                {
+                    // Get selected slide object in reading view
+                    slide = pptApp.SlideShowWindows[1].View.Slide;
+                }
+            }
         }
 
         private void LHandedBtn_Click(object sender, EventArgs e)
@@ -118,12 +149,14 @@ namespace KinBoard
 
         private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
+
             using (var frame = e.FrameReference.AcquireFrame())
             {
+               // 사람이 인식되지 않은 상황에서 프로그램을 시작하면 정상적으로 frame을 받아옴.
+               // 그러나, 프로그램 시작 전 사람을 인식하고 있으면 frame == null...
                 if (frame != null)
                 {
                     frame.GetAndRefreshBodyData(bodies);
-
                     
                     Body body = bodies.Where(b => b.IsTracked).FirstOrDefault();
 
@@ -153,10 +186,10 @@ namespace KinBoard
                             skeletons[0].set_body(body);
                             skeletons[0].set_Hands(L, R);
 
-                            if (skeletons[0].get_bodies().Count() > 50)
+                            if (skeletons[0].get_bodies().Count() > 40)
+                            {
                                 action.compare(skeletons[0], whichHand);
-
-                            //MessageBox.Show(x.ToString());
+                            }
                         }
                     }
                     /*

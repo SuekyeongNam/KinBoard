@@ -93,7 +93,7 @@ namespace KinBoard
         {
             
             bodies.Enqueue(temp);
-            if(bodies.Count > 10)
+            if(bodies.Count > 150)
             {
                 bodies.Dequeue();
                 
