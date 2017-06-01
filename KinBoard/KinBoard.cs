@@ -20,8 +20,10 @@ namespace KinBoard
         private BodyFrame bodyFrame = null;
         Action action = null;
         HandWriting hand_writing = null;
-
+        
         private int whichHand = 0; // right = 0, left = 1
+
+        
 
         public KinBoard() {
             OpenKinect();

@@ -8,50 +8,58 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Kinect;
 using OpenCvSharp.CPlusPlus;
-using KinBoard;
 
 
 // Add PowerPoint namespace
 using PPt = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 
+
 namespace KinBoard
 {
     public partial class MainForm : Form
     {
-        //public static KinBoard _KinBoard;
         private List<Skeleton> skeletons;
         private KinectSensor kinectSensor = null;
         private BodyFrameReader bodyFrameReader = null;
         private Body[] bodies = null;
         private BodyFrame bodyFrame = null;
         Action action = null;
-
-        private int whichHand = 0;
+        
+        private char whichHand = 'R';
 
         private int _width = 0;
         private int _height = 0;
         private byte[] _pixels = null;
+        private bool lasso = false;
+        private bool prev_lasso = false;
 
-        
-        static public PPt.Application pptApp;
-        
+        static public PPt.Application pptApp;   
         static public PPt.Slides slides;
         static public PPt.Slide slide;
         static public PPt.Presentation presentation;
+        static public PPt.SlideShowSettings slideShowSettings;
+        static public PPt.SlideShowView slideShowView;
+        static public float slideHeight;
+        static public float slideWidth;
+
         // Slide count
         static public int slidescount;
         // slide index
         static public int slideIndex;
-        
+        HandWriting handwriting;
 
         bool isRightHanded = true;
+
+        // Face recognition 
+        //Kairos.API.KairosClient client = new Kairos.API.KairosClient();
 
         public MainForm()
         {
             InitializeComponent();
 
             kinectSensor = KinectSensor.GetDefault();
+            handwriting = new HandWriting();
 
             if (kinectSensor != null)
             {
@@ -70,11 +78,6 @@ namespace KinBoard
             // Set two buttons disable
             this.LHandedBtn.Enabled = false;
             this.RHandedBtn.Enabled = false;
-        }
-
-        public MainForm(KinBoard _temp)
-        {
-            InitializeComponent();
         }
 
         private void KinBoard_Load(object sender, EventArgs e)
@@ -100,6 +103,11 @@ namespace KinBoard
                 slides = presentation.Slides;
                 // Get Slide count
                 slidescount = slides.Count;
+                slideShowSettings = presentation.SlideShowSettings;
+                slideShowView = presentation.SlideShowWindow.View;
+                slideHeight = presentation.PageSetup.SlideHeight;
+                slideWidth = presentation.PageSetup.SlideWidth;
+
                 try
                 {
                     // Get selected slide object in normal view
@@ -117,14 +125,14 @@ namespace KinBoard
         {
             // For left-handed person
             isRightHanded = false;
-            whichHand = 1;
+            whichHand = 'L';
         }
 
         private void RHandedBtn_Click(object sender, EventArgs e)
         {
             // For right-handed person
             isRightHanded = true;
-            whichHand = 0;
+            whichHand = 'R';
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -167,11 +175,11 @@ namespace KinBoard
 
                         if (handRight.TrackingState != TrackingState.NotTracked && handLeft.TrackingState != TrackingState.NotTracked)
                         {
-                            CameraSpacePoint handRightPosition = handRight.Position;
+                            CameraSpacePoint handRightPosition = handRight.Position; 
                             ColorSpacePoint handRightPoint = kinectSensor.CoordinateMapper.MapCameraPointToColorSpace(handRightPosition);
                             CameraSpacePoint handLeftPosition = handLeft.Position;
                             ColorSpacePoint handLeftPoint = kinectSensor.CoordinateMapper.MapCameraPointToColorSpace(handLeftPosition);
-
+                            
                             int R_x = (int)handRightPoint.X;
                             int R_y = (int)handRightPoint.Y;
 
@@ -181,59 +189,92 @@ namespace KinBoard
                             Point R = new Point(R_x, R_y);
                             Point L = new Point(L_x, L_y);
 
-                            skeletons[0].set_id(1);
-                            skeletons[0].set_hand_state(body.HandRightState,body.HandLeftState);
-                            skeletons[0].set_body(body);
-                            skeletons[0].set_Hands(L, R);
+                            if (whichHand == 'R' )
+                            {
+                                if(lasso == false && body.HandLeftState == HandState.Closed)
+                                {
+                                    skeletons[0].set_id(1);
+                                    skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);
+                                    skeletons[0].set_body(body);
+                                    skeletons[0].set_Hands(L, R);
+                                    if (skeletons[0].get_bodies().Count() > 40)
+                                    {
+                                        action.compare(skeletons[0], whichHand);
+                                    }
+                                }
+                                
+                                else if(body.HandLeftState == HandState.Lasso)
+                                {
+                                    
+                                    skeletons[0].set_id(1);
+                                    skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);
+                                    skeletons[0].set_body(body);
+                                    skeletons[0].set_Hands(L, R);
+                                    if (skeletons[0].get_bodies().Count() == 15)
+                                    {
+                                     //   MessageBox.Show("Left");
+                                        lasso = true;
+                                        skeletons[0].get_bodies().Clear();
+                                    }
+                                }
+                                else if(body.HandRightState == HandState.Lasso)
+                                {
+                                    
+                                    skeletons[0].set_id(1);
+                                    skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);
+                                    skeletons[0].set_body(body);
+                                    skeletons[0].set_Hands(L, R);
+                                    if (skeletons[0].get_bodies().Count() == 15)
+                                    {
+                                     //   MessageBox.Show("Right");
+                                        lasso = false;
+                                        //handwriting.EndClick();
+                                        skeletons[0].get_bodies().Clear();
+                                    }
+                                }
+                                else if (lasso == true)
+                                {
+                                    // 필기
+                                    float R_a = handRightPosition.X;
+                                    float R_b = handRightPosition.Y;
+                                    float R_c = handRightPosition.Z;
 
-                            if (skeletons[0].get_bodies().Count() > 40)
-                            {
-                                action.compare(skeletons[0], whichHand);
+                                    float L_a = handLeftPosition.X;
+                                    float L_b = handLeftPosition.Y;
+                                    float L_c = handLeftPosition.Z;
+
+                                    if (R_c > L_c)
+                                    {
+                                        writing(R_a, R_b, R_c, true);  // pen
+                                    }
+                                    else
+                                    {
+                                        writing(L_a, L_b, L_c, false);   // erase
+                                    }
+                                }
+
+
                             }
+                         
                         }
+
                     }
-                    /*
-                    if (bodies.Length != skeletons.Count)
-                    {
-                        Skeleton temp = null;
-                        temp.set_id(bodies.Length - 1);
-                        skeletons.Add(temp);
-                    }
-                    for (int i = 0; i < bodies.Length; i++)
-                    {
-                        if (bodies[i].IsTracked == true)
-                        {
-                            skeletons[i].set_body(bodies[i]);
-                            skeletons[i].set_hand_state(bodies[i].HandRightState, bodies[i].HandLeftState);
-                            if (whichHand == 0) // 오른손잡이일 경우
-                            {
-                                if (bodies[i].HandRightState == HandState.Closed)
-                                {
-                                    //hand_writing.Pen(); // 필기 모드
-                                }
-                                else
-                                {
-                                    action.compare(skeletons[i], whichHand); // 동작 판단 함수
-                                }
-                            }
-                            else // 왼손잡이일 경우
-                            {
-                                if (bodies[i].HandLeftState == HandState.Closed)
-                                {
-                                    //hand_writing.Pen(); // 필기 모드
-                                }
-                                else
-                                {
-                                    action.compare(skeletons[i], whichHand); // 동작 판단 함수
-                                }
-                            }
-                        }
-                        
-                    }
-                    */
 
                 }
             }
         }
+
+        private void writing(float x, float y, float z, bool myhand)
+        {
+            if (z > 2.48 && z < 2.60)
+            {
+                handwriting.SetCursor((int)(-x * 450) + (int)(slideWidth / 2), ((int)(-y * 350) + (int)(slideHeight / 2)));
+                if (myhand)
+                    handwriting.Pen();
+                else
+                    handwriting.Erase();
+            }
+        }
+        
     }
 }

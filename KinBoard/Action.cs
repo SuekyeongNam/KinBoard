@@ -26,7 +26,7 @@ namespace KinBoard
         }
 
         //distinguish action and decide motion num
-        public void compare(Skeleton skeleton_i, int which_hand)
+        public void compare(Skeleton skeleton_i, char which_hand)
         {
             //get body Queue
             
