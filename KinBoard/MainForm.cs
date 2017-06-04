@@ -13,7 +13,6 @@ using System.Windows.Media;
 using System.IO;
 using System.Net.Sockets;
 using System.Net;
-
 // Add PowerPoint namespace
 using PPt = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
@@ -53,6 +52,8 @@ namespace KinBoard
         private double real_start_x;
         private double real_start_y;
 
+        private Skeleton current_skeleton;
+
         private int mode = 0;   // 0: Pen, 1: Eraser, 2: HighlightPen
         static public PPt.Application pptApp;   
         static public PPt.Slides slides;
@@ -89,6 +90,16 @@ namespace KinBoard
             kinectSensor = KinectSensor.GetDefault();
             handwriting = new HandWriting();
 
+            string[] lines = System.IO.File.ReadAllLines("skeleton.txt");
+            for(int i = 0; i < lines.Count(); i++)
+            {
+                Skeleton newSkelton= new Skeleton();
+                newSkelton.set_RHand(Int32.Parse(lines[i]));
+                newSkelton.set_id(i);
+                skeletons.Add(newSkelton);
+            }
+            count_id = lines.Count();
+
             client = new Kairos.API.KairosClient();
 
             client.ApplicationID = "1bb5b32c";
@@ -112,7 +123,7 @@ namespace KinBoard
                 _pixels = new byte[_width * _height * 4];
                 bodies = new Body[kinectSensor.BodyFrameSource.BodyCount];
                 skeletons = new List<Skeleton>();
-                skeletons.Add(new Skeleton());
+                current_skeleton = new Skeleton();
                 action = new Action();
             }
 
@@ -173,7 +184,7 @@ namespace KinBoard
         private void LHandedBtn_Click(object sender, EventArgs e)
         {
             // For left-handed person
-            skeletons[current_skeleton_id].set_RHand(1);
+            current_skeleton.set_RHand(1);
             isRightHanded = false;
             whichHand = 'L';
         }
@@ -181,7 +192,7 @@ namespace KinBoard
         private void RHandedBtn_Click(object sender, EventArgs e)
         {
             // For right-handed person
-            skeletons[current_skeleton_id].set_RHand(0);
+            current_skeleton.set_RHand(0);
             isRightHanded = true;
             whichHand = 'R';
         }
@@ -195,6 +206,21 @@ namespace KinBoard
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            string filetext = "";
+            for(int i = 0; i < skeletons.Count; i++)
+            {
+                if (skeletons[i].get_RHand() == 0)
+                {
+                    filetext += " 0\n";
+                }
+                else
+                {
+                    filetext += " 1\n";
+                }
+            }
+
+            System.IO.File.WriteAllText("skeleton.txt", filetext);
+
             if (bodyFrameReader != null)
             {
                 bodyFrameReader.Dispose();
@@ -249,7 +275,7 @@ namespace KinBoard
 
                     //string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
 
-                    string path = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\" + "1" + ".jpg";
+                    string path = "C:\\Users\\KHUNET\\Desktop\\NoMore\\KinBoard\\KinBoard\\frame\\1.jpg";
                     //image_count++;
                     // write the new file t o disk
                     try
@@ -274,13 +300,15 @@ namespace KinBoard
         {
             var temp = client.Detect(imageUrl);
             var face = temp.Images.First().Faces[0];
+            
             client.Enroll(imageUrl, count_id.ToString(), face.topLeftX, face.topLeftY, face.width, face.height );
             current_skeleton_id = count_id;
             Skeleton new_one = new Skeleton();
-            new_one = null;
-            skeletons.Add(new_one);
-            skeletons[current_skeleton_id].set_body(body);
-            skeletons[current_skeleton_id].set_id(current_skeleton_id);
+            //new_one = null;
+            skeletons.Add(current_skeleton);
+            skeletons[count_id].set_body(body);
+            skeletons[count_id].set_id(count_id);
+            skeletons[count_id].set_RHand(current_skeleton.get_RHand());
             count_id++;
         }
 
@@ -296,20 +324,12 @@ namespace KinBoard
                     break;
                 }
             }
-            if(m == 0)
-            {
-                Skeleton new_one = new Skeleton();
-                new_one = null;
-                skeletons.Add(new_one);
-                skeletons[current_skeleton_id].set_body(body);
-                skeletons[current_skeleton_id].set_id(current_skeleton_id);
-            }
         }
 
         private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
             frame_count++;
-            if(frame_count == 50)
+            if(frame_count == 200)
             {
                 string id = get_color_frame();
                 if(id == "")
@@ -352,6 +372,15 @@ namespace KinBoard
                         handLeft.Position.X = filteredJoints[7].X;
                         handLeft.Position.Y = filteredJoints[7].Y;
                         handLeft.Position.Z = filteredJoints[7].Z;
+                        
+                        if(current_skeleton.get_RHand() == 0) //오른손
+                        {
+                            whichHand = 'R';
+                        }
+                        else
+                        {
+                            whichHand = 'L';
+                        }
 
                         if (handRight.TrackingState != TrackingState.NotTracked && handLeft.TrackingState != TrackingState.NotTracked)
                         {
@@ -374,14 +403,10 @@ namespace KinBoard
                                 if (lasso)
                                 {
                                     // 필기
-                                    //float R_a = handRightPosition.X;
-                                    //float R_b = handRightPosition.Y;
                                     float R_a = handRightPoint.X;
                                     float R_b = handRightPoint.Y;
                                     float R_c = handRightPosition.Z;
-
-                                    //float L_a = handLeftPosition.X;
-                                    //float L_b = handLeftPosition.Y;
+                                    
                                     float L_a = handLeftPoint.X;
                                     float L_b = handLeftPoint.Y;
                                     float L_c = handLeftPosition.Z;
@@ -390,40 +415,30 @@ namespace KinBoard
 
                                     if (body.HandLeftState == HandState.Closed)
                                     {
-                                        skeletons[current_skeleton_id].set_body(body);
-                                        skeletons[current_skeleton_id].set_id(1);
-                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);
-                                        skeletons[current_skeleton_id].set_Hands(L, R);
-                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 15)
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 15)
                                         {
                                             mode = (mode + 1) % 3;
-                                            skeletons[current_skeleton_id].get_bodies().Clear();
+                                            current_skeleton.get_bodies().Clear();
                                         }
                                         
                                     }
                                     
-                                    /*
-                                    if (R_c > L_c)
-                                    {
-                                        writing(R_a, R_b, R_c, true);  // pen
-                                    }
-                                    else
-                                    {
-                                        writing(L_a, L_b, L_c, false);   // erase
-                                    }
-                                    */
                                     if (body.HandRightState == HandState.Lasso)
                                     {
 
-                                        skeletons[current_skeleton_id].set_body(body);
-                                        skeletons[current_skeleton_id].set_id(1);
-                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);
-                                        skeletons[current_skeleton_id].set_Hands(L, R);
-                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 15)
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 15)
                                         {
                                             lasso = false;
                                             handwriting.EndClick();
-                                            skeletons[current_skeleton_id].get_bodies().Clear();
+                                            current_skeleton.get_bodies().Clear();
                                         }
                                     }
                                 }
@@ -433,42 +448,121 @@ namespace KinBoard
                                     // 넘기기 동작
                                     if (body.HandLeftState == HandState.Closed)
                                     {
-                                        skeletons[current_skeleton_id].set_body(body);
-                                        skeletons[current_skeleton_id].set_id(1);
-                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);                                      
-                                        skeletons[current_skeleton_id].set_Hands(L, R);
-                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 21)
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 21)
                                         {
-                                            //Semaphore = true;
-                                            action.compare(skeletons[current_skeleton_id], whichHand);
+                                            action.compare(current_skeleton, whichHand);
                                             Delay(1);
-                                            skeletons[current_skeleton_id].clear_hand();
-                                            skeletons[current_skeleton_id].get_bodies().Clear();
-                                            //Semaphore = false;
+                                            current_skeleton.clear_hand();
+                                            current_skeleton.get_bodies().Clear();
                                         }
                                     }
                                     // 필기모드 진입
                                     else if(body.HandLeftState == HandState.Lasso)
                                     {
-                                        skeletons[current_skeleton_id].set_body(body);
-                                        skeletons[current_skeleton_id].set_id(1);
-                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);
-
-                                        skeletons[current_skeleton_id].set_Hands(L, R);
-                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 15)
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 15)
                                         {
                                             lasso = true;
-                                            skeletons[current_skeleton_id].get_bodies().Clear();
+                                            current_skeleton.get_bodies().Clear();
                                         }
                                     }
                                     // 아무것도 아닌 상태
                                     else
                                     {
-                                        skeletons[current_skeleton_id].clear_hand();
-                                        skeletons[current_skeleton_id].get_bodies().Clear();
+                                        current_skeleton.clear_hand();
+                                        current_skeleton.get_bodies().Clear();
                                     }
                                 }
 
+                            }
+                            else
+                            {
+                                if (lasso)
+                                {
+                                    // 필기
+                                    float R_a = handRightPoint.X;
+                                    float R_b = handRightPoint.Y;
+                                    float R_c = handRightPosition.Z;
+                                    
+                                    float L_a = handLeftPoint.X;
+                                    float L_b = handLeftPoint.Y;
+                                    float L_c = handLeftPosition.Z;
+
+                                    writing(L_a, L_b, L_c, mode);
+
+                                    if (body.HandRightState == HandState.Closed)
+                                    {
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 15)
+                                        {
+                                            mode = (mode + 1) % 3;
+                                            current_skeleton.get_bodies().Clear();
+                                        }
+                                        Delay(1);
+                                    }
+
+                                    if (body.HandLeftState == HandState.Lasso)
+                                    {
+
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 15)
+                                        {
+                                            lasso = false;
+                                            handwriting.EndClick();
+                                            current_skeleton.get_bodies().Clear();
+                                        }
+                                    }
+                                }
+                                else // 필기모드 아님
+                                {
+
+                                    // 넘기기 동작
+                                    if (body.HandRightState == HandState.Closed)
+                                    {
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 21)
+                                        {
+                                            action.compare(current_skeleton, whichHand);
+                                            Delay(1);
+                                            current_skeleton.clear_hand();
+                                            current_skeleton.get_bodies().Clear();
+                                        }
+                                    }
+                                    else if (body.HandRightState == HandState.Lasso)
+                                    {
+                                        current_skeleton.set_body(body);
+                                        current_skeleton.set_id(1);
+                                        current_skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                        current_skeleton.set_Hands(L, R);
+                                        if (current_skeleton.get_bodies().Count() == 15)
+                                        {
+                                            lasso = true;
+                                            current_skeleton.get_bodies().Clear();
+                                        }
+                                    }
+                                    // 아무것도 아닌 상태
+                                    else
+                                    {
+                                        current_skeleton.clear_hand();
+                                        current_skeleton.get_bodies().Clear();
+                                    }
+                                }
                             }
                          
                         }
