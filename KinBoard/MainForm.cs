@@ -10,7 +10,9 @@ using Microsoft.Kinect;
 using OpenCvSharp.CPlusPlus;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
-
+using System.IO;
+using System.Net.Sockets;
+using System.Net;
 
 // Add PowerPoint namespace
 using PPt = Microsoft.Office.Interop.PowerPoint;
@@ -24,7 +26,10 @@ namespace KinBoard
         private List<Skeleton> skeletons;
         private KinectSensor kinectSensor = null;
 
-      
+        // color frame 변수
+        private ColorFrameReader colorFrameReader = null;
+        private WriteableBitmap colorBitmap = null;
+        private int frame_count = 0;
 
         // body frmae 변수
         private BodyFrameReader bodyFrameReader = null;
@@ -65,6 +70,11 @@ namespace KinBoard
 
         bool isRightHanded = true;
 
+        // server
+        static string HOST = "127.0.0.1";
+        static int PORT = 9000;
+        static TcpClient client_upload;
+
         // Face recognition 
         //Kairos.API.KairosClient client = new Kairos.API.KairosClient();
 
@@ -79,6 +89,13 @@ namespace KinBoard
                 // body frame
                 bodyFrameReader = kinectSensor.BodyFrameSource.OpenReader();
                 bodyFrameReader.FrameArrived += BodyReader_FrameArrived;
+
+                // color frame
+                this.colorFrameReader = this.kinectSensor.ColorFrameSource.OpenReader();
+                //this.colorFrameReader.FrameArrived += this.Reader_ColorFrameArrived;
+                FrameDescription colorFrameDescription = this.kinectSensor.ColorFrameSource.CreateFrameDescription(ColorImageFormat.Bgra);
+                // create the bitmap to display
+                this.colorBitmap = new WriteableBitmap(colorFrameDescription.Width, colorFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
 
                 kinectSensor.Open();
 
@@ -171,19 +188,123 @@ namespace KinBoard
                 bodyFrameReader.Dispose();
             }
 
+            if(colorFrameReader != null)
+            {
+                colorFrameReader.Dispose();
+            }
+
             if (kinectSensor != null)
             {
                 kinectSensor.Close();
             }
         }
 
-        
+        public ColorFrame get_color_frame()
+        {
+            ColorFrame colorFrame_ = colorFrameReader.AcquireLatestFrame();
+            if (this.colorBitmap != null)
+            {
+                // create a png bitmap encoder which knows how to save a .png file
+                BitmapEncoder encoder = new PngBitmapEncoder();
+
+                // create frame from the writable bitmap and add to encoder
+                encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
 
 
+                string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+
+                string path = Path.Combine(myPhotos, "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame" + "1" + ".jpg");
+                //image_count++;
+                // write the new file t o disk
+                try
+                {
+                    // FileStream is IDisposable
+                    using (FileStream fs = new FileStream(path, FileMode.Create))
+                    {
+                        encoder.Save(fs);
+                    }
+                }
+                catch (IOException)
+                {
+
+                }
+            }
+            return colorFrame_;
+        }
+
+        //private void Reader_ColorFrameArrived(object sender, ColorFrameArrivedEventArgs e)
+        //{
+            
+        //    // ColorFrame is IDisposable
+        //    using (ColorFrame colorFrame = e.FrameReference.AcquireFrame())
+        //    {
+        //        if (colorFrame != null)
+        //        {
+        //            FrameDescription colorFrameDescription = colorFrame.FrameDescription;
+
+        //            using (KinectBuffer colorBuffer = colorFrame.LockRawImageBuffer())
+        //            {
+        //                this.colorBitmap.Lock();
+
+        //                // verify data and write the new color frame data to the display bitmap
+        //                if ((colorFrameDescription.Width == this.colorBitmap.PixelWidth) && (colorFrameDescription.Height == this.colorBitmap.PixelHeight))
+        //                {
+        //                    frame_count++;
+        //                    if (frame_count == 80)
+        //                    {
+        //                        capture_photo();
+        //                        string id = check_face();
+        //                        //frame_count = 0;
+        //                    }
+        //                }
+
+        //                this.colorBitmap.Unlock();
+        //            }
+
+        //        }
+        //    }
+        //}
+
+        private void capture_photo()
+        {
+            if (this.colorBitmap != null)
+            {
+                // create a png bitmap encoder which knows how to save a .png file
+                BitmapEncoder encoder = new PngBitmapEncoder();
+
+                // create frame from the writable bitmap and add to encoder
+                encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
+
+
+                string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+
+                string path = Path.Combine(myPhotos, "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\KinectScreenshot-Color-" + "1" + ".jpg");
+                //image_count++;
+                // write the new file t o disk
+                try
+                {
+                    // FileStream is IDisposable
+                    using (FileStream fs = new FileStream(path, FileMode.Create))
+                    {
+                        encoder.Save(fs);
+                    }
+                }
+                catch (IOException)
+                {
+
+                }
+            }
+        }
 
         private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
-
+            frame_count++;
+            if(frame_count == 200)
+            {
+                get_color_frame();
+                //string id = check_face();
+                frame_count = 0;
+            }
             using (var frame = e.FrameReference.AcquireFrame())
             {
                // 사람이 인식되지 않은 상황에서 프로그램을 시작하면 정상적으로 frame을 받아옴.
@@ -191,13 +312,28 @@ namespace KinBoard
                 if (frame != null)
                 {
                     frame.GetAndRefreshBodyData(bodies);
-                    
+
+                    // stable 시키기
+                    Stablization filter = new Stablization();
+                    filter.Init();
+
                     Body body = bodies.Where(b => b.IsTracked).FirstOrDefault();
+                    filter.UpdateFilter(body);
+                    CameraSpacePoint[] filteredJoints = filter.GetFilteredJoints();
 
                     if (body != null)
                     {
+                        //Joint handRight = body.Joints[JointType.HandRight];
+                        //Joint handLeft = body.Joints[JointType.HandLeft];
+
                         Joint handRight = body.Joints[JointType.HandRight];
+                        handRight.Position.X = filteredJoints[11].X;
+                        handRight.Position.Y = filteredJoints[11].Y;
+                        handRight.Position.Z = filteredJoints[11].Z;
                         Joint handLeft = body.Joints[JointType.HandLeft];
+                        handLeft.Position.X = filteredJoints[7].X;
+                        handLeft.Position.Y = filteredJoints[7].Y;
+                        handLeft.Position.Z = filteredJoints[7].Z;
 
                         if (handRight.TrackingState != TrackingState.NotTracked && handLeft.TrackingState != TrackingState.NotTracked)
                         {
@@ -370,6 +506,49 @@ namespace KinBoard
                 dateTimeNow = DateTime.Now;
             }
             return DateTime.Now;
+        }
+
+        private string check_face()
+        {
+            Kairos.API.KairosClient client = new Kairos.API.KairosClient();
+
+            client.ApplicationID = "1bb5b32c";
+            client.ApplicationKey = "240fc5eb22e3e22eacd70582b2c6608e";
+
+            // Detect the face(s)
+            if (client_upload != null)
+                MessageBox.Show("이미 연결되어있습니다.");
+            else
+            {
+                try
+                {
+                    client_upload = new TcpClient();
+                    client_upload.Connect(HOST, PORT);
+                }
+                catch (Exception ex)
+                {
+                    client_upload = null;
+                }
+            }
+
+            string image = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\face\\KinectScreenshot-Color-1.jpg";
+
+            //image 경로를 보내는 부분
+            NetworkStream nwStream = client_upload.GetStream();
+            byte[] byteToSend = ASCIIEncoding.ASCII.GetBytes(image);
+            nwStream.Write(byteToSend, 0, byteToSend.Length);
+
+            //보낸 image의 url을 receive한 부분
+            byte[] bytesToRead = new byte[client_upload.ReceiveBufferSize];
+            int bytesRead = nwStream.Read(bytesToRead, 0, client_upload.ReceiveBufferSize);
+            string recieve_url = Encoding.ASCII.GetString(bytesToRead, 0, bytesRead);
+
+            string imageUrl = recieve_url;
+
+            var recognizeResponse = client.Recognize(imageUrl);
+
+            // Get the recognized user ID
+            return recognizeResponse;
         }
 
     }
