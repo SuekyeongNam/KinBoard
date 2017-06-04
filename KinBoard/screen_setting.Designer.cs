@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.button1 = new System.Windows.Forms.Button();
-            this.btn_setting = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // button1
@@ -42,22 +41,11 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // btn_setting
-            // 
-            this.btn_setting.Location = new System.Drawing.Point(166, 38);
-            this.btn_setting.Name = "btn_setting";
-            this.btn_setting.Size = new System.Drawing.Size(75, 23);
-            this.btn_setting.TabIndex = 2;
-            this.btn_setting.Text = "설정";
-            this.btn_setting.UseVisualStyleBackColor = true;
-            this.btn_setting.Click += new System.EventHandler(this.btn_setting_Click);
-            // 
             // screen_setting
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(457, 245);
-            this.Controls.Add(this.btn_setting);
+            this.ClientSize = new System.Drawing.Size(548, 313);
             this.Controls.Add(this.button1);
             this.Name = "screen_setting";
             this.Text = "screen_setting";
@@ -68,6 +56,5 @@
 
         #endregion
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button btn_setting;
     }
 }

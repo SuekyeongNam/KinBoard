@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +14,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.IO;
 using System.Globalization;
-//using Emgu.CV;
+using System.Net.Sockets;
+using System.Net;
 
 // Add PowerPoint namespace
 using PPt = Microsoft.Office.Interop.PowerPoint;
@@ -23,6 +25,9 @@ namespace KinBoard
 {
     public partial class screen_setting : Form
     {
+        static string HOST = "127.0.0.1";
+        static int PORT = 9000;
+        static TcpClient client_upload;
 
         // color frame 변수
         private ColorFrameReader colorFrameReader = null;
@@ -36,6 +41,7 @@ namespace KinBoard
         private Skeleton _skeleton;
 
         private double ratio = 0;
+        private int image_count = 0;
         private OpenCvSharp.CPlusPlus.Point[] _point = new OpenCvSharp.CPlusPlus.Point[2];
         private int count = 0;
         private int IsBtnClick = 0;
@@ -43,6 +49,7 @@ namespace KinBoard
         private double x_ratio;
         private double y_ratio;
         private double depth_location = 0.0;
+
         double real_start_y;
         double real_start_x;
 
@@ -220,86 +227,90 @@ namespace KinBoard
 
         private void button1_Click(object sender, EventArgs e)
         {
-            // 캡쳐
-            //if (this.colorBitmap != null)
-            //{
-            //    // create a png bitmap encoder which knows how to save a .png file
-            //    BitmapEncoder encoder = new PngBitmapEncoder();
+            if (this.colorBitmap != null)
+            {
+                // create a png bitmap encoder which knows how to save a .png file
+                BitmapEncoder encoder = new PngBitmapEncoder();
 
-            //    // create frame from the writable bitmap and add to encoder
-            //    encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
+                // create frame from the writable bitmap and add to encoder
+                encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
+                
 
-            //    string time = System.DateTime.Now.ToString("hh'-'mm'-'ss", CultureInfo.CurrentUICulture.DateTimeFormat);
+                string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
 
-            //    string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                string path = Path.Combine(myPhotos, "KinectScreenshot-Color-" + image_count + ".jpg");
+                image_count++;
+                // write the new file t o disk
+                try
+                {
+                    // FileStream is IDisposable
+                    using (FileStream fs = new FileStream(path, FileMode.Create))
+                    {
+                        encoder.Save(fs);
+                    }
+                }
+                catch (IOException)
+                {
 
-            //    string path = Path.Combine(myPhotos, "KinectScreenshot-Color-" + time + ".png");
-
-            //    // write the new file t o disk
-            //    try
-            //    {
-            //        // FileStream is IDisposable
-            //        using (FileStream fs = new FileStream(path, FileMode.Create))
-            //        {
-            //            encoder.Save(fs);
-            //        }
-            //    }
-            //    catch (IOException)
-            //    {
-
-            //    }
-            //}
+                }
+            }
 
             // 손가락으로 인식
             //set_ratio();
+            string id = check_face();
+            MessageBox.Show(id);
+
             IsBtnClick = 1;
             
         }
 
-        private void btn_setting_Click(object sender, EventArgs e)
+        private string check_face()
         {
-            PPt.CustomLayout temp = slides[1].CustomLayout;
-            slides.AddSlide(1, temp);
-            slides[1].Shapes.AddShape(Microsoft.Office.Core.MsoAutoShapeType.msoShapeRound1Rectangle, (slideWidth / 2) - 20, (slideHeight / 2) - 20, 40, 40);
-            slides[1].Shapes[3].Fill.ForeColor.RGB = System.Drawing.Color.Blue.ToArgb();
-            slides[1].Shapes[3].Line.DashStyle = Microsoft.Office.Core.MsoLineDashStyle.msoLineSolid;
+            Kairos.API.KairosClient client = new Kairos.API.KairosClient();
 
+            client.ApplicationID = "1bb5b32c";
+            client.ApplicationKey = "240fc5eb22e3e22eacd70582b2c6608e";
+
+            // Detect the face(s)
+            if (client_upload != null)
+                MessageBox.Show("이미 연결되어있습니다.");
+            else
+            {
+                try
+                {
+                    client_upload = new TcpClient();
+                    client_upload.Connect(HOST, PORT);
+                }
+                catch (Exception ex)
+                {
+                    client_upload = null;
+                }
+            }
+
+            string image = "C:\\Users\\KHUNET\\Desktop\\Kinboard_v2\\KinBoard\\KinBoard\\KinectScreenshot-Color-" + image_count + ".jpg";
+
+            //image 경로를 보내는 부분
+            NetworkStream nwStream = client_upload.GetStream();
+            byte[] byteToSend = ASCIIEncoding.ASCII.GetBytes(image);
+            nwStream.Write(byteToSend, 0, byteToSend.Length);
+
+            //보낸 image의 url을 receive한 부분
+            byte[] bytesToRead = new byte[client_upload.ReceiveBufferSize];
+            int bytesRead = nwStream.Read(bytesToRead, 0, client_upload.ReceiveBufferSize);
+            string recieve_url = Encoding.ASCII.GetString(bytesToRead, 0, bytesRead);
+            
+            string imageUrl = recieve_url;
+
+            var recognizeResponse = client.Recognize(imageUrl);
+            
+            // Get the recognized user ID
+            return recognizeResponse;
         }
 
         private void screen_setting_Load(object sender, EventArgs e)
         {
 
         }
-
-        // 수정이 필요함
-        //public static Mat ToMat(BitmapSource source)
-        //{
-        //if (source.Format == PixelFormats.Bgra32)
-        //{
-        //    Mat result = new Mat();
-        //    result.Create(source.PixelHeight, source.PixelWidth, DepthType.Cv8U, 4);
-        //    source.CopyPixels(System.Windows.Int32Rect.Empty, result.DataPointer, result.Step * result.Rows, result.Step);
-        //    return result;
-        //}
-        //else if (source.Format == PixelFormats.Bgr24)
-        //{
-        //    Mat result = new Mat();
-        //    result.Create(source.PixelHeight, source.PixelWidth, DepthType.Cv8U, 3);
-        //    source.CopyPixels(System.Windows.Int32Rect.Empty, result.DataPointer, result.Step * result.Rows, result.Step);
-        //    return result;
-        //}
-        //else if (source.Format == PixelFormats.Pbgra32)
-        //{
-        //    Mat result = new Mat();
-        //    result.Create(source.PixelHeight, source.PixelWidth, DepthType.Cv8U, 4);
-        //    source.CopyPixels(System.Windows.Int32Rect.Empty, result.DataPointer, result.Step * result.Rows, result.Step);
-        //    return result;
-        //}
-        //else
-        //{
-        //    throw new Exception(String.Format("Conversion from BitmapSource of format {0} is not supported.", source.Format));
-        //}
-        //}
     }
 
 }

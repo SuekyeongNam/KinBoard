@@ -14,9 +14,6 @@ namespace KinBoard
         [STAThread]
         static void Main()
         {
-            KinBoard _KinBoard;
-            _KinBoard = new KinBoard();
-
             Application.EnableVisualStyles();
             //Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new MainForm());
