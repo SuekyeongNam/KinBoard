@@ -169,7 +169,7 @@ namespace KinBoard
         }
 
         void turnPage()
-        {
+        {            
          //   MessageBox.Show("인식");
             MainForm.slideIndex = MainForm.slide.SlideIndex + 1;
             if (MainForm.slideIndex > MainForm.slidescount)
@@ -214,5 +214,7 @@ namespace KinBoard
                 }
             }
         }
+
+        
     }
 }

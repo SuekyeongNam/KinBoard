@@ -149,11 +149,21 @@ namespace KinBoard
 
         public void set_ratio()
         {
-            double height = ((double)540 / 720) * ratio;
+            double height = ((double)540 / 960) * ratio;
+
             real_start_y = _point[1].Y - height;
+            //real_start_y = _point[0].Y;
+            //if(real_start_y < 0)
+            //{
+            //    real_start_y = 0;
+            //}
             real_start_x = _point[0].X;
-            x_ratio = ((double) ratio / 720);
-            y_ratio = ((double) height / 520);
+            //if(real_start_x < 0)
+            //{
+            //    real_start_x = 0;
+            //}
+            x_ratio = (960 / (double)ratio);
+            y_ratio = (540 / (double)height);
         }
 
         private void Reader_ColorFrameArrived(object sender, ColorFrameArrivedEventArgs e)

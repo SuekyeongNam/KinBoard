@@ -51,6 +51,19 @@ namespace KinBoard
             //mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, 0);
         }
 
+        public void PenHide()
+        {
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            MainForm.slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerPen;
+            MainForm.slideShowView.PointerColor.RGB = Convert.ToInt32("0000FF", 16); // red color
+            Cursor.Position = new Point(x, y);
+        }
+        public void EraseHide()
+        {
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            MainForm.slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerEraser;
+            Cursor.Position = new Point(x, y);
+        }
         public void Pen()
         {
             if(prev_x != 0 && prev_y != 0)
@@ -60,10 +73,10 @@ namespace KinBoard
              mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
              Cursor.Position = new Point(prev_x, prev_y);
              mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+         //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
              Cursor.Position = new Point(x, y);
              mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+         //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
              MainForm.slideShowView.DrawLine(0, 0, 10, 10);
 
             }
@@ -81,6 +94,31 @@ namespace KinBoard
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
             //MainForm.slideShowView.DrawLine(prev_x, prev_y, x, y);
 
+        }
+        public void HighlightPen()
+        {
+            MainForm.slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerPen;
+            MainForm.slideShowView.PointerColor.RGB = Convert.ToInt32("00FFFF", 16); // yellow color
+            //MainForm.slideShowView.PointerColor.Brightness = 0.3F;
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Cursor.Position = new Point(prev_x, prev_y);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            Cursor.Position = new Point(x, y);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            MainForm.slideShowView.DrawLine(0, 0, 10, 10);
+
+        }
+
+        public void HighlightPenHide()
+        {
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            MainForm.slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerPen;
+            MainForm.slideShowView.PointerColor.RGB = Convert.ToInt32("00FFFF", 16); // yellow color
+            //MainForm.slideShowView.PointerColor.Brightness = 0.3F;
+            
+            Cursor.Position = new Point(x, y);
         }
 
         public void EndClick()

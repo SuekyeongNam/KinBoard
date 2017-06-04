@@ -24,7 +24,7 @@ namespace KinBoard
         private List<Skeleton> skeletons;
         private KinectSensor kinectSensor = null;
 
-       
+      
 
         // body frmae 변수
         private BodyFrameReader bodyFrameReader = null;
@@ -46,12 +46,14 @@ namespace KinBoard
         private double real_start_x;
         private double real_start_y;
 
+        private int mode = 0;   // 0: Pen, 1: Eraser, 2: HighlightPen
         static public PPt.Application pptApp;   
         static public PPt.Slides slides;
         static public PPt.Slide slide;
         static public PPt.Presentation presentation;
         static public PPt.SlideShowSettings slideShowSettings;
         static public PPt.SlideShowView slideShowView;
+
         static public float slideHeight;
         static public float slideWidth;
 
@@ -230,6 +232,23 @@ namespace KinBoard
                                     float L_b = handLeftPoint.Y;
                                     float L_c = handLeftPosition.Z;
 
+                                    writing(R_a, R_b, R_c, mode);
+
+                                    if (body.HandLeftState == HandState.Closed)
+                                    {
+                                        skeletons[0].set_body(body);
+                                        skeletons[0].set_id(1);
+                                        skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);
+                                        skeletons[0].set_Hands(L, R);
+                                        if (skeletons[0].get_bodies().Count() == 15)
+                                        {
+                                            mode = (mode + 1) % 3;
+                                            skeletons[0].get_bodies().Clear();
+                                        }
+                                        
+                                    }
+                                    
+                                    /*
                                     if (R_c > L_c)
                                     {
                                         writing(R_a, R_b, R_c, true);  // pen
@@ -238,7 +257,7 @@ namespace KinBoard
                                     {
                                         writing(L_a, L_b, L_c, false);   // erase
                                     }
-
+                                    */
                                     if (body.HandRightState == HandState.Lasso)
                                     {
 
@@ -268,6 +287,7 @@ namespace KinBoard
                                         {
                                             //Semaphore = true;
                                             action.compare(skeletons[0], whichHand);
+                                            Delay(1);
                                             skeletons[0].clear_hand();
                                             skeletons[0].get_bodies().Clear();
                                             //Semaphore = false;
@@ -305,21 +325,52 @@ namespace KinBoard
             }
         }
 
-        private void writing(float x, float y, float z, bool myhand)
+        private void writing(float x, float y, float z, int mode)
         {
             x = x - (float)real_start_x;
             y = y - (float)real_start_y;
-            //if (z > depth_location - 0.05 && z < depth_location + 0.05)
-            //{
-                int _x = (int)(x_ratio * x);
-                int _y = (int)(y_ratio * y);
+            x = System.Math.Abs(x);
+            y = System.Math.Abs(y);
 
-                handwriting.SetCursor(_x, _y);
-                if (myhand)
+            int _x = (int)((1 + x_ratio) * x);
+            int _y = (int)((1 + y_ratio) * y);
+
+            handwriting.SetCursor(_x, _y);
+
+            if (depth_location + 0.1 > z && depth_location - 0.1 < z)
+            {
+
+                if (mode == 0)
                     handwriting.Pen();
-                else
+                else if (mode == 1)
                     handwriting.Erase();
-            //}
+                else if(mode == 2)
+                    handwriting.HighlightPen();
+            }
+            else
+            {
+                if (mode == 0)
+                    handwriting.PenHide();
+                else if (mode == 1)
+                    handwriting.EraseHide();
+                else if(mode == 2)
+                    handwriting.HighlightPenHide();
+            }
         }
+
+        DateTime Delay(double ms)
+        {
+            DateTime dateTimeNow = DateTime.Now;
+            TimeSpan duration = new TimeSpan(0, 0, 0, (int)ms);
+            DateTime dateTimeAdd = dateTimeNow.Add(duration);
+
+            while (dateTimeAdd >= dateTimeNow)
+            {
+                //System.Windows.Forms.Application.DoEvents();
+                dateTimeNow = DateTime.Now;
+            }
+            return DateTime.Now;
+        }
+
     }
 }
