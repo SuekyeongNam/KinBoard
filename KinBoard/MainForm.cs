@@ -199,59 +199,63 @@ namespace KinBoard
             }
         }
 
-        public ColorFrame get_color_frame()
+        public string get_color_frame()
         {
+            string id = "";
             ColorFrame colorFrame_ = colorFrameReader.AcquireLatestFrame();
-
-            FrameDescription colorFrameDescription = colorFrame_.FrameDescription;
-
-            using (KinectBuffer colorBuffer = colorFrame_.LockRawImageBuffer())
+            if(colorFrame_ != null)
             {
-                this.colorBitmap.Lock();
+                FrameDescription colorFrameDescription = colorFrame_.FrameDescription;
 
-                // verify data and write the new color frame data to the display bitmap
-                if ((colorFrameDescription.Width == this.colorBitmap.PixelWidth) && (colorFrameDescription.Height == this.colorBitmap.PixelHeight))
+                using (KinectBuffer colorBuffer = colorFrame_.LockRawImageBuffer())
                 {
-                    colorFrame_.CopyConvertedFrameDataToIntPtr(
-                        this.colorBitmap.BackBuffer,
-                        (uint)(colorFrameDescription.Width * colorFrameDescription.Height * 4),
-                        ColorImageFormat.Bgra);
+                    this.colorBitmap.Lock();
 
-                    this.colorBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight));
-                    //this.colorBitmap.CopyPixels(, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight);
+                    // verify data and write the new color frame data to the display bitmap
+                    if ((colorFrameDescription.Width == this.colorBitmap.PixelWidth) && (colorFrameDescription.Height == this.colorBitmap.PixelHeight))
+                    {
+                        colorFrame_.CopyConvertedFrameDataToIntPtr(
+                            this.colorBitmap.BackBuffer,
+                            (uint)(colorFrameDescription.Width * colorFrameDescription.Height * 4),
+                            ColorImageFormat.Bgra);
+
+                        this.colorBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight));
+                        //this.colorBitmap.CopyPixels(, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight);
+                    }
+
+                    this.colorBitmap.Unlock();
                 }
 
-                this.colorBitmap.Unlock();
-            }
-
-            if (this.colorBitmap != null)
-            {
-                // create a png bitmap encoder which knows how to save a .png file
-                BitmapEncoder encoder = new PngBitmapEncoder();
-
-                // create frame from the writable bitmap and add to encoder
-                encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
-
-
-                //string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-
-                string path = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\" + "1" + ".jpg";
-                //image_count++;
-                // write the new file t o disk
-                try
+                if (this.colorBitmap != null)
                 {
-                    // FileStream is IDisposable
-                    using (FileStream fs = new FileStream(path, FileMode.Create))
+                    // create a png bitmap encoder which knows how to save a .png file
+                    BitmapEncoder encoder = new PngBitmapEncoder();
+
+                    // create frame from the writable bitmap and add to encoder
+                    encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
+
+
+                    //string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+
+                    string path = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\" + "1" + ".jpg";
+                    //image_count++;
+                    // write the new file t o disk
+                    try
                     {
-                        encoder.Save(fs);
+                        // FileStream is IDisposable
+                        using (FileStream fs = new FileStream(path, FileMode.Create))
+                        {
+                            encoder.Save(fs);
+                        }
+                    }
+                    catch (IOException)
+                    {
+
                     }
                 }
-                catch (IOException)
-                {
-
-                }
+                id = check_face();
             }
-            return colorFrame_;
+            return id;
         }
 
         private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
@@ -259,8 +263,7 @@ namespace KinBoard
             frame_count++;
             if(frame_count == 100)
             {
-                get_color_frame();
-                string id = check_face();
+                string id = get_color_frame();
                 MessageBox.Show(id);
                 frame_count = 0;
             }
