@@ -202,6 +202,28 @@ namespace KinBoard
         public ColorFrame get_color_frame()
         {
             ColorFrame colorFrame_ = colorFrameReader.AcquireLatestFrame();
+
+            FrameDescription colorFrameDescription = colorFrame_.FrameDescription;
+
+            using (KinectBuffer colorBuffer = colorFrame_.LockRawImageBuffer())
+            {
+                this.colorBitmap.Lock();
+
+                // verify data and write the new color frame data to the display bitmap
+                if ((colorFrameDescription.Width == this.colorBitmap.PixelWidth) && (colorFrameDescription.Height == this.colorBitmap.PixelHeight))
+                {
+                    colorFrame_.CopyConvertedFrameDataToIntPtr(
+                        this.colorBitmap.BackBuffer,
+                        (uint)(colorFrameDescription.Width * colorFrameDescription.Height * 4),
+                        ColorImageFormat.Bgra);
+
+                    this.colorBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight));
+                    //this.colorBitmap.CopyPixels(, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight);
+                }
+
+                this.colorBitmap.Unlock();
+            }
+
             if (this.colorBitmap != null)
             {
                 // create a png bitmap encoder which knows how to save a .png file
@@ -211,9 +233,9 @@ namespace KinBoard
                 encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
 
 
-                string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                //string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
 
-                string path = Path.Combine(myPhotos, "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame" + "1" + ".jpg");
+                string path = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\" + "1" + ".jpg";
                 //image_count++;
                 // write the new file t o disk
                 try
@@ -232,77 +254,14 @@ namespace KinBoard
             return colorFrame_;
         }
 
-        //private void Reader_ColorFrameArrived(object sender, ColorFrameArrivedEventArgs e)
-        //{
-            
-        //    // ColorFrame is IDisposable
-        //    using (ColorFrame colorFrame = e.FrameReference.AcquireFrame())
-        //    {
-        //        if (colorFrame != null)
-        //        {
-        //            FrameDescription colorFrameDescription = colorFrame.FrameDescription;
-
-        //            using (KinectBuffer colorBuffer = colorFrame.LockRawImageBuffer())
-        //            {
-        //                this.colorBitmap.Lock();
-
-        //                // verify data and write the new color frame data to the display bitmap
-        //                if ((colorFrameDescription.Width == this.colorBitmap.PixelWidth) && (colorFrameDescription.Height == this.colorBitmap.PixelHeight))
-        //                {
-        //                    frame_count++;
-        //                    if (frame_count == 80)
-        //                    {
-        //                        capture_photo();
-        //                        string id = check_face();
-        //                        //frame_count = 0;
-        //                    }
-        //                }
-
-        //                this.colorBitmap.Unlock();
-        //            }
-
-        //        }
-        //    }
-        //}
-
-        private void capture_photo()
-        {
-            if (this.colorBitmap != null)
-            {
-                // create a png bitmap encoder which knows how to save a .png file
-                BitmapEncoder encoder = new PngBitmapEncoder();
-
-                // create frame from the writable bitmap and add to encoder
-                encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
-
-
-                string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-
-                string path = Path.Combine(myPhotos, "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\KinectScreenshot-Color-" + "1" + ".jpg");
-                //image_count++;
-                // write the new file t o disk
-                try
-                {
-                    // FileStream is IDisposable
-                    using (FileStream fs = new FileStream(path, FileMode.Create))
-                    {
-                        encoder.Save(fs);
-                    }
-                }
-                catch (IOException)
-                {
-
-                }
-            }
-        }
-
         private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
             frame_count++;
-            if(frame_count == 200)
+            if(frame_count == 100)
             {
                 get_color_frame();
-                //string id = check_face();
+                string id = check_face();
+                MessageBox.Show(id);
                 frame_count = 0;
             }
             using (var frame = e.FrameReference.AcquireFrame())
@@ -531,7 +490,7 @@ namespace KinBoard
                 }
             }
 
-            string image = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\face\\KinectScreenshot-Color-1.jpg";
+            string image = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\1.jpg";
 
             //image 경로를 보내는 부분
             NetworkStream nwStream = client_upload.GetStream();
