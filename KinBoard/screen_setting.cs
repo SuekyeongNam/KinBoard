@@ -7,13 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-//using OpenCvSharp.CPlusPlus;
+using OpenCvSharp.CPlusPlus;
 using Microsoft.Kinect;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.IO;
 using System.Globalization;
-using Emgu.CV;
+//using Emgu.CV;
 
 // Add PowerPoint namespace
 using PPt = Microsoft.Office.Interop.PowerPoint;
@@ -28,6 +28,23 @@ namespace KinBoard
         private ColorFrameReader colorFrameReader = null;
         private WriteableBitmap colorBitmap = null;
         private KinectSensor kinectSensor = null;
+
+        private BodyFrameReader bodyFrameReader = null;
+        private Body[] bodies = null;
+        private BodyFrame bodyFrame = null;
+
+        private Skeleton _skeleton;
+
+        private double ratio = 0;
+        private OpenCvSharp.CPlusPlus.Point[] _point = new OpenCvSharp.CPlusPlus.Point[2];
+        private int count = 0;
+        private int IsBtnClick = 0;
+
+        private double x_ratio;
+        private double y_ratio;
+        private double depth_location = 0.0;
+        double real_start_y;
+        double real_start_x;
 
         static public PPt.Application pptApp;
         static public PPt.Slides slides;
@@ -44,6 +61,10 @@ namespace KinBoard
 
             kinectSensor = KinectSensor.GetDefault();
 
+            //body frame
+            bodyFrameReader = kinectSensor.BodyFrameSource.OpenReader();
+            bodyFrameReader.FrameArrived += BodyReader_FrameArrived;
+
             // color frame
             this.colorFrameReader = this.kinectSensor.ColorFrameSource.OpenReader();
             this.colorFrameReader.FrameArrived += this.Reader_ColorFrameArrived;
@@ -52,7 +73,87 @@ namespace KinBoard
             this.colorBitmap = new WriteableBitmap(colorFrameDescription.Width, colorFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
             kinectSensor.Open();
 
+            bodies = new Body[kinectSensor.BodyFrameSource.BodyCount];
+            _skeleton = new Skeleton();
+        }
 
+        public double get_ratio()
+        {
+            return ratio;
+        }
+
+        private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
+        {
+
+            using (var frame = e.FrameReference.AcquireFrame())
+            {
+                // 사람이 인식되지 않은 상황에서 프로그램을 시작하면 정상적으로 frame을 받아옴.
+                // 그러나, 프로그램 시작 전 사람을 인식하고 있으면 frame == null...
+                if (frame != null)
+                {
+                    frame.GetAndRefreshBodyData(bodies);
+
+                    Body body = bodies.Where(b => b.IsTracked).FirstOrDefault();
+
+                    if (body != null)
+                    {
+                        Joint handRight = body.Joints[JointType.HandRight];
+                        Joint handLeft = body.Joints[JointType.HandLeft];
+
+                        if (handRight.TrackingState != TrackingState.NotTracked && handLeft.TrackingState != TrackingState.NotTracked)
+                        {
+                            CameraSpacePoint handRightPosition = handRight.Position;
+                            ColorSpacePoint handRightPoint = kinectSensor.CoordinateMapper.MapCameraPointToColorSpace(handRightPosition);
+                            CameraSpacePoint handLeftPosition = handLeft.Position;
+                            ColorSpacePoint handLeftPoint = kinectSensor.CoordinateMapper.MapCameraPointToColorSpace(handLeftPosition);
+
+                            int R_x = (int)handRightPoint.X;
+                            int R_y = (int)handRightPoint.Y;
+
+                            int L_x = (int)handLeftPoint.X;
+                            int L_y = (int)handLeftPoint.Y;
+
+                            OpenCvSharp.CPlusPlus.Point R = new OpenCvSharp.CPlusPlus.Point(R_x, R_y);
+                            OpenCvSharp.CPlusPlus.Point L = new OpenCvSharp.CPlusPlus.Point(L_x, L_y);
+
+                            if (IsBtnClick == 1)
+                            {
+                                _skeleton.set_body(body);
+                                _skeleton.set_id(1);
+                                _skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                _skeleton.set_Hands(L, R);
+                                depth_location = body.Joints[JointType.HandRight].Position.Z;
+                                count++;
+                                IsBtnClick = 0;
+
+                                // 다음 창으로 넘어감
+                                if (count == 2)
+                                {
+                                    _point[0] = _skeleton.get_RHandPoint(0);
+                                    _point[1] = _skeleton.get_RHandPoint(1);
+                                    ratio = _point[0].X - _point[1].X;
+                                    ratio = Math.Abs(ratio);
+                                    set_ratio();
+                                    MainForm _new = new MainForm(x_ratio, y_ratio, depth_location, real_start_x, real_start_y);
+                                    this.SetVisibleCore(false);
+                                    _new.Show();
+                                }
+                            }
+                        }
+
+                    }
+
+                }
+            }
+        }
+
+        public void set_ratio()
+        {
+            double height = ((double)540 / 720) * ratio;
+            real_start_y = _point[1].Y - height;
+            real_start_x = _point[0].X;
+            x_ratio = ((double) ratio / 720);
+            y_ratio = ((double) height / 520);
         }
 
         private void Reader_ColorFrameArrived(object sender, ColorFrameArrivedEventArgs e)
@@ -109,39 +210,40 @@ namespace KinBoard
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (this.colorBitmap != null)
-            {
-                // create a png bitmap encoder which knows how to save a .png file
-                BitmapEncoder encoder = new PngBitmapEncoder();
+            // 캡쳐
+            //if (this.colorBitmap != null)
+            //{
+            //    // create a png bitmap encoder which knows how to save a .png file
+            //    BitmapEncoder encoder = new PngBitmapEncoder();
 
-                // create frame from the writable bitmap and add to encoder
-                encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
+            //    // create frame from the writable bitmap and add to encoder
+            //    encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
 
-                string time = System.DateTime.Now.ToString("hh'-'mm'-'ss", CultureInfo.CurrentUICulture.DateTimeFormat);
+            //    string time = System.DateTime.Now.ToString("hh'-'mm'-'ss", CultureInfo.CurrentUICulture.DateTimeFormat);
 
-                string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            //    string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
 
-                string path = Path.Combine(myPhotos, "KinectScreenshot-Color-" + time + ".png");
+            //    string path = Path.Combine(myPhotos, "KinectScreenshot-Color-" + time + ".png");
 
-                // write the new file to disk
-                try
-                {
-                    // FileStream is IDisposable
-                    using (FileStream fs = new FileStream(path, FileMode.Create))
-                    {
-                        encoder.Save(fs);
-                    }
-                }
-                catch (IOException)
-                {
+            //    // write the new file t o disk
+            //    try
+            //    {
+            //        // FileStream is IDisposable
+            //        using (FileStream fs = new FileStream(path, FileMode.Create))
+            //        {
+            //            encoder.Save(fs);
+            //        }
+            //    }
+            //    catch (IOException)
+            //    {
 
-                }
-            }
+            //    }
+            //}
+
+            // 손가락으로 인식
+            //set_ratio();
+            IsBtnClick = 1;
             
-            MainForm _new = new MainForm();
-            this.SetVisibleCore(false);
-            _new.Show();
-
         }
 
         private void btn_setting_Click(object sender, EventArgs e)
@@ -151,6 +253,11 @@ namespace KinBoard
             slides[1].Shapes.AddShape(Microsoft.Office.Core.MsoAutoShapeType.msoShapeRound1Rectangle, (slideWidth / 2) - 20, (slideHeight / 2) - 20, 40, 40);
             slides[1].Shapes[3].Fill.ForeColor.RGB = System.Drawing.Color.Blue.ToArgb();
             slides[1].Shapes[3].Line.DashStyle = Microsoft.Office.Core.MsoLineDashStyle.msoLineSolid;
+
+        }
+
+        private void screen_setting_Load(object sender, EventArgs e)
+        {
 
         }
 

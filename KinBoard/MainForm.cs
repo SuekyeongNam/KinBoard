@@ -40,6 +40,12 @@ namespace KinBoard
         private byte[] _pixels = null;
         private bool lasso = false;
 
+        private double x_ratio;
+        private double y_ratio;
+        private double depth_location;
+        private double real_start_x;
+        private double real_start_y;
+
         static public PPt.Application pptApp;   
         static public PPt.Slides slides;
         static public PPt.Slide slide;
@@ -60,7 +66,7 @@ namespace KinBoard
         // Face recognition 
         //Kairos.API.KairosClient client = new Kairos.API.KairosClient();
 
-        public MainForm()
+        public MainForm(double x_ratio, double y_ratio, double depth_location, double real_start_x, double real_start_y)
         {
             InitializeComponent();
             kinectSensor = KinectSensor.GetDefault();
@@ -68,8 +74,6 @@ namespace KinBoard
 
             if (kinectSensor != null)
             {
-              
-
                 // body frame
                 bodyFrameReader = kinectSensor.BodyFrameSource.OpenReader();
                 bodyFrameReader.FrameArrived += BodyReader_FrameArrived;
@@ -86,7 +90,12 @@ namespace KinBoard
             // Set two buttons disable
             this.LHandedBtn.Enabled = false;
             this.RHandedBtn.Enabled = false;
-            
+
+            this.x_ratio = x_ratio;
+            this.y_ratio = y_ratio;
+            this.depth_location = depth_location;
+            this.real_start_x = real_start_x;
+            this.real_start_y = real_start_y;
         }
 
         private void KinBoard_Load(object sender, EventArgs e)
@@ -298,14 +307,19 @@ namespace KinBoard
 
         private void writing(float x, float y, float z, bool myhand)
         {
-         //   if (z > 2.48 && z < 2.60)
-          //  {
-            handwriting.SetCursor((int)(x), (int)(y));
-            if (myhand)
-                handwriting.Pen();
-            else
-                handwriting.Erase();
-        }
+            x = x - (float)real_start_x;
+            y = y - (float)real_start_y;
+            //if (z > depth_location - 0.05 && z < depth_location + 0.05)
+            //{
+                int _x = (int)(x_ratio * x);
+                int _y = (int)(y_ratio * y);
 
+                handwriting.SetCursor(_x, _y);
+                if (myhand)
+                    handwriting.Pen();
+                else
+                    handwriting.Erase();
+            //}
+        }
     }
 }
