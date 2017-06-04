@@ -62,9 +62,20 @@ namespace KinBoard
             Left_Hand = new List<Point>();
         }
 
+        public void clear_hand()
+        {
+            Right_Hand.Clear();
+            Left_Hand.Clear();
+        }
+
         public Point get_RHandPoint(int index)
         {
             return Right_Hand[index];
+        }
+
+        public int get_Count()
+        {
+            return Right_Hand.Count();
         }
 
         public Point get_LHandPoint(int index)
@@ -93,16 +104,23 @@ namespace KinBoard
         {
             
             bodies.Enqueue(temp);
-            if(bodies.Count > 150)
+            if(bodies.Count > 21)
             {
                 bodies.Dequeue();
-                
             }
             
         }
 
         public void set_Hands(Point Left, Point Right)
         {
+            if(Right_Hand.Count() > 21)
+            {
+                Right_Hand.Clear();
+            }
+            if (Left_Hand.Count() > 21)
+            {
+                Left_Hand.Clear();
+            }
             Right_Hand.Add(Right);
             Left_Hand.Add(Left);
         }

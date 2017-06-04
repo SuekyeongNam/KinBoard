@@ -18,8 +18,9 @@ namespace KinBoard
             _KinBoard = new KinBoard();
 
             Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            //Application.SetCompatibleTextRenderingDefault(false);
+            //Application.Run(new MainForm());
+            Application.Run(new screen_setting());
         }
     }
 }

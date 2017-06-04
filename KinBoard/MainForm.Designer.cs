@@ -56,7 +56,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(343, 112);
+            this.ClientSize = new System.Drawing.Size(372, 124);
             this.Controls.Add(this.RHandedBtn);
             this.Controls.Add(this.LHandedBtn);
             this.Name = "MainForm";

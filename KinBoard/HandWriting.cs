@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Drawing;
+
 
 using PPt = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
@@ -19,6 +21,7 @@ namespace KinBoard
 
         int x, y;
         int prev_x, prev_y;
+
         //Mouse actions
         private const int MOUSEEVENTF_ABSOLUTE = 0x8000;
         private const int MOUSEEVENTF_MOVE = 0x01;
@@ -41,13 +44,11 @@ namespace KinBoard
             prev_y = y;
             x = _x;
             y = _y;
-            //SetCursorPos((65535 / 1920)*_x, (65535 / 720)*_y);
         }
 
-        public void DoMouseClick()
-        {
+        public void DoMouseClick() {
             //Call the imported function with the cursor's current position
-            mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, 0);
+            //mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, 0);
         }
 
         public void Pen()
@@ -56,19 +57,28 @@ namespace KinBoard
             {
              MainForm.slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerPen;
              MainForm.slideShowView.PointerColor.RGB = Convert.ToInt32("0000FF", 16); // red color
+             mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+             Cursor.Position = new Point(prev_x, prev_y);
+             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+             Cursor.Position = new Point(x, y);
+             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+             MainForm.slideShowView.DrawLine(0, 0, 10, 10);
 
-             //mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, (uint)((65535 / 1920) * x), (uint)((65535 / 1920) * y), 0, 0);
-                MainForm.slideShowView.DrawLine(prev_x, prev_y, x, y);
             }
         }
 
         public void Erase()
         {
             MainForm.slideShowView.PointerType = PPt.PpSlideShowPointerType.ppSlideShowPointerEraser;
-            MainForm.slideShowView.EraseDrawing();
-            //MainForm.presentation.Save();
-
-            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, (uint)((65535 / 1920) * x), (uint)((65535 / 1920) * y), 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Cursor.Position = new Point(prev_x, prev_y);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            Cursor.Position = new Point(x, y);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
             //MainForm.slideShowView.DrawLine(prev_x, prev_y, x, y);
 
         }
