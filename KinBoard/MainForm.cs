@@ -24,6 +24,7 @@ namespace KinBoard
     public partial class MainForm : Form
     {
         private List<Skeleton> skeletons;
+        private int current_skeleton_id = 0;
         private KinectSensor kinectSensor = null;
 
         // color frame 변수
@@ -35,6 +36,7 @@ namespace KinBoard
         private BodyFrameReader bodyFrameReader = null;
         private Body[] bodies = null;
         private BodyFrame bodyFrame = null;
+        Body body = null;
         Action action = null;
         
         private char whichHand = 'R';
@@ -75,6 +77,9 @@ namespace KinBoard
         static int PORT = 9000;
         static TcpClient client_upload;
 
+        Kairos.API.KairosClient client = null;
+        string imageUrl = "";
+        int count_id = 0;
         // Face recognition 
         //Kairos.API.KairosClient client = new Kairos.API.KairosClient();
 
@@ -83,6 +88,11 @@ namespace KinBoard
             InitializeComponent();
             kinectSensor = KinectSensor.GetDefault();
             handwriting = new HandWriting();
+
+            client = new Kairos.API.KairosClient();
+
+            client.ApplicationID = "1bb5b32c";
+            client.ApplicationKey = "fc94f86519c41c4ca922a68012ae9eab";
 
             if (kinectSensor != null)
             {
@@ -163,6 +173,7 @@ namespace KinBoard
         private void LHandedBtn_Click(object sender, EventArgs e)
         {
             // For left-handed person
+            skeletons[current_skeleton_id].set_RHand(1);
             isRightHanded = false;
             whichHand = 'L';
         }
@@ -170,6 +181,7 @@ namespace KinBoard
         private void RHandedBtn_Click(object sender, EventArgs e)
         {
             // For right-handed person
+            skeletons[current_skeleton_id].set_RHand(0);
             isRightHanded = true;
             whichHand = 'R';
         }
@@ -254,17 +266,61 @@ namespace KinBoard
                     }
                 }
                 id = check_face();
+
             }
             return id;
+        }
+        public void add_new_face()
+        {
+            var temp = client.Detect(imageUrl);
+            var face = temp.Images.First().Faces[0];
+            client.Enroll(imageUrl, count_id.ToString(), face.topLeftX, face.topLeftY, face.width, face.height );
+            current_skeleton_id = count_id;
+            Skeleton new_one = new Skeleton();
+            new_one = null;
+            skeletons.Add(new_one);
+            skeletons[current_skeleton_id].set_body(body);
+            skeletons[current_skeleton_id].set_id(current_skeleton_id);
+            count_id++;
+        }
+
+        public void find_skeleton(int id)
+        {
+            int m = 0;
+            for(int i = 0; i < skeletons.Count(); i++)
+            {
+                if (skeletons[i].get_id() == id)
+                {
+                    current_skeleton_id = id;
+                    m++;
+                    break;
+                }
+            }
+            if(m == 0)
+            {
+                Skeleton new_one = new Skeleton();
+                new_one = null;
+                skeletons.Add(new_one);
+                skeletons[current_skeleton_id].set_body(body);
+                skeletons[current_skeleton_id].set_id(current_skeleton_id);
+            }
         }
 
         private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
             frame_count++;
-            if(frame_count == 100)
+            if(frame_count == 50)
             {
                 string id = get_color_frame();
-                MessageBox.Show(id);
+                if(id == "")
+                {
+                    add_new_face();
+                }
+                else
+                {
+                    find_skeleton(Int32.Parse(id));
+                }
+                //MessageBox.Show(id);
                 frame_count = 0;
             }
             using (var frame = e.FrameReference.AcquireFrame())
@@ -279,7 +335,7 @@ namespace KinBoard
                     Stablization filter = new Stablization();
                     filter.Init();
 
-                    Body body = bodies.Where(b => b.IsTracked).FirstOrDefault();
+                    body = bodies.Where(b => b.IsTracked).FirstOrDefault();
                     filter.UpdateFilter(body);
                     CameraSpacePoint[] filteredJoints = filter.GetFilteredJoints();
 
@@ -334,14 +390,14 @@ namespace KinBoard
 
                                     if (body.HandLeftState == HandState.Closed)
                                     {
-                                        skeletons[0].set_body(body);
-                                        skeletons[0].set_id(1);
-                                        skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);
-                                        skeletons[0].set_Hands(L, R);
-                                        if (skeletons[0].get_bodies().Count() == 15)
+                                        skeletons[current_skeleton_id].set_body(body);
+                                        skeletons[current_skeleton_id].set_id(1);
+                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);
+                                        skeletons[current_skeleton_id].set_Hands(L, R);
+                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 15)
                                         {
                                             mode = (mode + 1) % 3;
-                                            skeletons[0].get_bodies().Clear();
+                                            skeletons[current_skeleton_id].get_bodies().Clear();
                                         }
                                         
                                     }
@@ -359,15 +415,15 @@ namespace KinBoard
                                     if (body.HandRightState == HandState.Lasso)
                                     {
 
-                                        skeletons[0].set_body(body);
-                                        skeletons[0].set_id(1);
-                                        skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);
-                                        skeletons[0].set_Hands(L, R);
-                                        if (skeletons[0].get_bodies().Count() == 15)
+                                        skeletons[current_skeleton_id].set_body(body);
+                                        skeletons[current_skeleton_id].set_id(1);
+                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);
+                                        skeletons[current_skeleton_id].set_Hands(L, R);
+                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 15)
                                         {
                                             lasso = false;
                                             handwriting.EndClick();
-                                            skeletons[0].get_bodies().Clear();
+                                            skeletons[current_skeleton_id].get_bodies().Clear();
                                         }
                                     }
                                 }
@@ -377,39 +433,39 @@ namespace KinBoard
                                     // 넘기기 동작
                                     if (body.HandLeftState == HandState.Closed)
                                     {
-                                        skeletons[0].set_body(body);
-                                        skeletons[0].set_id(1);
-                                        skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);                                      
-                                        skeletons[0].set_Hands(L, R);
-                                        if (skeletons[0].get_bodies().Count() == 21)
+                                        skeletons[current_skeleton_id].set_body(body);
+                                        skeletons[current_skeleton_id].set_id(1);
+                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);                                      
+                                        skeletons[current_skeleton_id].set_Hands(L, R);
+                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 21)
                                         {
                                             //Semaphore = true;
-                                            action.compare(skeletons[0], whichHand);
+                                            action.compare(skeletons[current_skeleton_id], whichHand);
                                             Delay(1);
-                                            skeletons[0].clear_hand();
-                                            skeletons[0].get_bodies().Clear();
+                                            skeletons[current_skeleton_id].clear_hand();
+                                            skeletons[current_skeleton_id].get_bodies().Clear();
                                             //Semaphore = false;
                                         }
                                     }
                                     // 필기모드 진입
                                     else if(body.HandLeftState == HandState.Lasso)
                                     {
-                                        skeletons[0].set_body(body);
-                                        skeletons[0].set_id(1);
-                                        skeletons[0].set_hand_state(body.HandRightState, body.HandLeftState);
+                                        skeletons[current_skeleton_id].set_body(body);
+                                        skeletons[current_skeleton_id].set_id(1);
+                                        skeletons[current_skeleton_id].set_hand_state(body.HandRightState, body.HandLeftState);
 
-                                        skeletons[0].set_Hands(L, R);
-                                        if (skeletons[0].get_bodies().Count() == 15)
+                                        skeletons[current_skeleton_id].set_Hands(L, R);
+                                        if (skeletons[current_skeleton_id].get_bodies().Count() == 15)
                                         {
                                             lasso = true;
-                                            skeletons[0].get_bodies().Clear();
+                                            skeletons[current_skeleton_id].get_bodies().Clear();
                                         }
                                     }
                                     // 아무것도 아닌 상태
                                     else
                                     {
-                                        skeletons[0].clear_hand();
-                                        skeletons[0].get_bodies().Clear();
+                                        skeletons[current_skeleton_id].clear_hand();
+                                        skeletons[current_skeleton_id].get_bodies().Clear();
                                     }
                                 }
 
@@ -472,14 +528,11 @@ namespace KinBoard
 
         private string check_face()
         {
-            Kairos.API.KairosClient client = new Kairos.API.KairosClient();
-
-            client.ApplicationID = "1bb5b32c";
-            client.ApplicationKey = "240fc5eb22e3e22eacd70582b2c6608e";
+            
 
             // Detect the face(s)
-            if (client_upload != null)
-                MessageBox.Show("이미 연결되어있습니다.");
+            if (client_upload != null) { }
+                //MessageBox.Show("이미 연결되어있습니다.");
             else
             {
                 try
@@ -493,7 +546,7 @@ namespace KinBoard
                 }
             }
 
-            string image = "C:\\Users\\수경\\Desktop\\KinBoard\\KinBoard\\KinBoard\\KinBoard\\frame\\1.jpg";
+            string image = "C:\\Users\\KHUNET\\Desktop\\NoMore\\KinBoard\\KinBoard\\frame\\1.jpg";
 
             //image 경로를 보내는 부분
             NetworkStream nwStream = client_upload.GetStream();
@@ -505,13 +558,21 @@ namespace KinBoard
             int bytesRead = nwStream.Read(bytesToRead, 0, client_upload.ReceiveBufferSize);
             string recieve_url = Encoding.ASCII.GetString(bytesToRead, 0, bytesRead);
 
-            string imageUrl = recieve_url;
+            imageUrl = recieve_url;
 
             var recognizeResponse = client.Recognize(imageUrl);
-
+            if(recognizeResponse.Contains("subject_id"))
+            {
+                int _index = recognizeResponse.IndexOf(':');
+                recognizeResponse = recognizeResponse.Substring(_index + 1);
+                recognizeResponse = recognizeResponse.Replace("\"", "");
+            }
+            else
+            {
+                recognizeResponse = "";
+            }
             // Get the recognized user ID
             return recognizeResponse;
         }
-
     }
 }

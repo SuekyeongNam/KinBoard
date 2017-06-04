@@ -60,7 +60,7 @@ namespace KinBoard
         public screen_setting()
         {
             InitializeComponent();
-
+           
             kinectSensor = KinectSensor.GetDefault();
 
             //body frame

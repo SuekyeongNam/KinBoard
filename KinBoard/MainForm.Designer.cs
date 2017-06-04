@@ -30,11 +30,12 @@
         {
             this.LHandedBtn = new System.Windows.Forms.Button();
             this.RHandedBtn = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // LHandedBtn
             // 
-            this.LHandedBtn.Location = new System.Drawing.Point(10, 27);
+            this.LHandedBtn.Location = new System.Drawing.Point(121, 127);
             this.LHandedBtn.Name = "LHandedBtn";
             this.LHandedBtn.Size = new System.Drawing.Size(153, 62);
             this.LHandedBtn.TabIndex = 0;
@@ -44,7 +45,7 @@
             // 
             // RHandedBtn
             // 
-            this.RHandedBtn.Location = new System.Drawing.Point(178, 27);
+            this.RHandedBtn.Location = new System.Drawing.Point(289, 127);
             this.RHandedBtn.Name = "RHandedBtn";
             this.RHandedBtn.Size = new System.Drawing.Size(153, 62);
             this.RHandedBtn.TabIndex = 1;
@@ -52,11 +53,21 @@
             this.RHandedBtn.UseVisualStyleBackColor = true;
             this.RHandedBtn.Click += new System.EventHandler(this.RHandedBtn_Click);
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(39, 26);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(38, 12);
+            this.label1.TabIndex = 2;
+            this.label1.Text = "label1";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(372, 124);
+            this.ClientSize = new System.Drawing.Size(475, 215);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.RHandedBtn);
             this.Controls.Add(this.LHandedBtn);
             this.Name = "MainForm";
@@ -65,6 +76,7 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.KinBoard_Load);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -72,5 +84,6 @@
 
         private System.Windows.Forms.Button LHandedBtn;
         private System.Windows.Forms.Button RHandedBtn;
+        private System.Windows.Forms.Label label1;
     }
 }

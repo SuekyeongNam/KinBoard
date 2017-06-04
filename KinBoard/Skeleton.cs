@@ -54,6 +54,7 @@ namespace KinBoard
         private Queue<Body> bodies;
         private List<Point> Right_Hand;
         private List<Point> Left_Hand;
+        private int IsRightHand = 0;
 
         public Skeleton() {
 
@@ -130,10 +131,27 @@ namespace KinBoard
             id = num;
         }
 
+        public int get_id()
+        {
+            return id;
+        }
+
         public void set_hand_state(HandState Rstate, HandState Lstate)
         {
             right_hand_state = Rstate;
             left_hand_state = Lstate;
+        }
+
+        //오른손잡이 : 0
+        //왼손잡이 : 1
+        public void set_RHand(int num)
+        {
+            IsRightHand = num;
+        }
+
+        public int get_RHand()
+        {
+            return IsRightHand;
         }
 
     }
