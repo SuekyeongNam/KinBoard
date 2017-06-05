@@ -13,10 +13,11 @@ using System.Windows.Media;
 using System.IO;
 using System.Net.Sockets;
 using System.Net;
+using System.Drawing.Imaging;
 // Add PowerPoint namespace
 using PPt = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
-
+using System.Drawing;
 
 namespace KinBoard
 {
@@ -84,11 +85,16 @@ namespace KinBoard
         // Face recognition 
         //Kairos.API.KairosClient client = new Kairos.API.KairosClient();
 
+
+
         public MainForm(double x_ratio, double y_ratio, double depth_location, double real_start_x, double real_start_y)
         {
             InitializeComponent();
             kinectSensor = KinectSensor.GetDefault();
             handwriting = new HandWriting();
+            label_id.Text = "-";
+            label_hand.Text = "Right Hand";
+            label_mode.Text = "발표 모드";
 
             string[] lines = System.IO.File.ReadAllLines("skeleton.txt");
             for(int i = 0; i < lines.Count(); i++)
@@ -103,10 +109,12 @@ namespace KinBoard
             client = new Kairos.API.KairosClient();
 
             client.ApplicationID = "1bb5b32c";
-            client.ApplicationKey = "fc94f86519c41c4ca922a68012ae9eab";
+            client.ApplicationKey = "240fc5eb22e3e22eacd70582b2c6608e";
 
             if (kinectSensor != null)
             {
+
+                kinectSensor.Open();
                 // body frame
                 bodyFrameReader = kinectSensor.BodyFrameSource.OpenReader();
                 bodyFrameReader.FrameArrived += BodyReader_FrameArrived;
@@ -117,8 +125,6 @@ namespace KinBoard
                 FrameDescription colorFrameDescription = this.kinectSensor.ColorFrameSource.CreateFrameDescription(ColorImageFormat.Bgra);
                 // create the bitmap to display
                 this.colorBitmap = new WriteableBitmap(colorFrameDescription.Width, colorFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
-
-                kinectSensor.Open();
 
                 _pixels = new byte[_width * _height * 4];
                 bodies = new Body[kinectSensor.BodyFrameSource.BodyCount];
@@ -162,7 +168,6 @@ namespace KinBoard
                 // Get Slide count
                 slidescount = slides.Count;
                 slideIndex = presentation.SlideShowWindow.View.Slide.SlideIndex;
-;
                 slideShowSettings = presentation.SlideShowSettings;
                 slideShowView = presentation.SlideShowWindow.View;
                 slideHeight = presentation.PageSetup.SlideHeight;
@@ -206,20 +211,6 @@ namespace KinBoard
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            string filetext = "";
-            for(int i = 0; i < skeletons.Count; i++)
-            {
-                if (skeletons[i].get_RHand() == 0)
-                {
-                    filetext += " 0\n";
-                }
-                else
-                {
-                    filetext += " 1\n";
-                }
-            }
-
-            System.IO.File.WriteAllText("skeleton.txt", filetext);
 
             if (bodyFrameReader != null)
             {
@@ -240,11 +231,12 @@ namespace KinBoard
         public string get_color_frame()
         {
             string id = "";
-            ColorFrame colorFrame_ = colorFrameReader.AcquireLatestFrame();
-            if(colorFrame_ != null)
+            
+            var colorFrame_ = this.colorFrameReader.AcquireLatestFrame();
+            if (colorFrame_ != null)
             {
+                frame_count = -200;
                 FrameDescription colorFrameDescription = colorFrame_.FrameDescription;
-
                 using (KinectBuffer colorBuffer = colorFrame_.LockRawImageBuffer())
                 {
                     this.colorBitmap.Lock();
@@ -263,15 +255,15 @@ namespace KinBoard
 
                     this.colorBitmap.Unlock();
                 }
-
+                
                 if (this.colorBitmap != null)
                 {
+
                     // create a png bitmap encoder which knows how to save a .png file
                     BitmapEncoder encoder = new PngBitmapEncoder();
 
                     // create frame from the writable bitmap and add to encoder
                     encoder.Frames.Add(BitmapFrame.Create(this.colorBitmap));
-
 
                     //string myPhotos = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
 
@@ -292,24 +284,48 @@ namespace KinBoard
                     }
                 }
                 id = check_face();
-
+                label_id.Text = id;
+            }
+            else
+            {
+                return "-1";
             }
             return id;
         }
         public void add_new_face()
         {
             var temp = client.Detect(imageUrl);
-            var face = temp.Images.First().Faces[0];
-            
-            client.Enroll(imageUrl, count_id.ToString(), face.topLeftX, face.topLeftY, face.width, face.height );
-            current_skeleton_id = count_id;
-            Skeleton new_one = new Skeleton();
-            //new_one = null;
-            skeletons.Add(current_skeleton);
-            skeletons[count_id].set_body(body);
-            skeletons[count_id].set_id(count_id);
-            skeletons[count_id].set_RHand(current_skeleton.get_RHand());
-            count_id++;
+            if(temp != null)
+            {
+                var face = temp.Images.First().Faces[0];
+
+                var enrollResponse = client.Enroll(imageUrl, count_id.ToString(), face.topLeftX, face.topLeftY, face.width, face.height);
+
+                current_skeleton_id = count_id;
+                Skeleton new_one = new Skeleton();
+                //new_one = null;
+                skeletons.Add(current_skeleton);
+                skeletons[count_id].set_body(body);
+                skeletons[count_id].set_id(count_id);
+                skeletons[count_id].set_RHand(current_skeleton.get_RHand());
+                count_id++;
+
+                string filetext = "";
+                if (skeletons[count_id].get_RHand() == 0)
+                {
+                    filetext += " 0\n";
+                }
+                else
+                {
+                    filetext += " 1\n";
+                }
+                System.IO.File.AppendAllText("skeleton.txt", filetext);
+            }
+            else
+            {
+                return;
+            }
+                
         }
 
         public void find_skeleton(int id)
@@ -319,6 +335,15 @@ namespace KinBoard
             {
                 if (skeletons[i].get_id() == id)
                 {
+                    if(skeletons[i].get_RHand() == 0)
+                    {
+                        label_hand.Text = "Right hand";
+                    }
+                    else
+                    {
+                        label_hand.Text = "Left hand";
+                    }
+                    
                     current_skeleton_id = id;
                     m++;
                     break;
@@ -328,21 +353,6 @@ namespace KinBoard
 
         private void BodyReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
-            frame_count++;
-            if(frame_count == 200)
-            {
-                string id = get_color_frame();
-                if(id == "")
-                {
-                    add_new_face();
-                }
-                else
-                {
-                    find_skeleton(Int32.Parse(id));
-                }
-                //MessageBox.Show(id);
-                frame_count = 0;
-            }
             using (var frame = e.FrameReference.AcquireFrame())
             {
                // 사람이 인식되지 않은 상황에서 프로그램을 시작하면 정상적으로 frame을 받아옴.
@@ -363,7 +373,7 @@ namespace KinBoard
                     {
                         //Joint handRight = body.Joints[JointType.HandRight];
                         //Joint handLeft = body.Joints[JointType.HandLeft];
-
+                        
                         Joint handRight = body.Joints[JointType.HandRight];
                         handRight.Position.X = filteredJoints[11].X;
                         handRight.Position.Y = filteredJoints[11].Y;
@@ -376,10 +386,13 @@ namespace KinBoard
                         if(current_skeleton.get_RHand() == 0) //오른손
                         {
                             whichHand = 'R';
+                            label_hand.Text = "Right Hand";
+                        
                         }
                         else
                         {
                             whichHand = 'L';
+                            label_hand.Text = "Left Hand";
                         }
 
                         if (handRight.TrackingState != TrackingState.NotTracked && handLeft.TrackingState != TrackingState.NotTracked)
@@ -395,14 +408,15 @@ namespace KinBoard
                             int L_x = (int)handLeftPoint.X;
                             int L_y = (int)handLeftPoint.Y;
 
-                            Point R = new Point(R_x, R_y);
-                            Point L = new Point(L_x, L_y);
+                            OpenCvSharp.CPlusPlus.Point R = new OpenCvSharp.CPlusPlus.Point(R_x, R_y);
+                            OpenCvSharp.CPlusPlus.Point L = new OpenCvSharp.CPlusPlus.Point(L_x, L_y);
 
                             if (whichHand == 'R' )
                             {                         
                                 if (lasso)
                                 {
                                     // 필기
+                                    label_mode.Text = "필기 모드";
                                     float R_a = handRightPoint.X;
                                     float R_b = handRightPoint.Y;
                                     float R_c = handRightPosition.Z;
@@ -444,7 +458,7 @@ namespace KinBoard
                                 }
                                 else // 필기모드 아님
                                 {
-                                    
+                                    label_mode.Text = "발표 모드";
                                     // 넘기기 동작
                                     if (body.HandLeftState == HandState.Closed)
                                     {
@@ -570,6 +584,27 @@ namespace KinBoard
                     }
 
                 }
+                
+                frame_count++;
+                if (frame_count == 10)
+                {
+                    string id = get_color_frame();
+                    if (id == "")
+                    {
+                        add_new_face();
+                    }
+                    else if(id == "-1")
+                    {
+                        frame_count = 0;
+                        return;
+                    }
+                    else
+                    {
+                        find_skeleton(Int32.Parse(id));
+                    }
+                    //MessageBox.Show(id);
+                    frame_count = 0;
+                }
             }
         }
 
@@ -640,22 +675,23 @@ namespace KinBoard
                 }
             }
 
-            string image = "C:\\Users\\KHUNET\\Desktop\\NoMore\\KinBoard\\KinBoard\\frame\\1.jpg";
-
+            string image_path = "C:\\Users\\KHUNET\\Desktop\\NoMore\\KinBoard\\KinBoard\\frame\\1.jpg";
+         
             //image 경로를 보내는 부분
             NetworkStream nwStream = client_upload.GetStream();
-            byte[] byteToSend = ASCIIEncoding.ASCII.GetBytes(image);
+            byte[] byteToSend = ASCIIEncoding.ASCII.GetBytes(image_path);
             nwStream.Write(byteToSend, 0, byteToSend.Length);
 
             //보낸 image의 url을 receive한 부분
             byte[] bytesToRead = new byte[client_upload.ReceiveBufferSize];
             int bytesRead = nwStream.Read(bytesToRead, 0, client_upload.ReceiveBufferSize);
             string recieve_url = Encoding.ASCII.GetString(bytesToRead, 0, bytesRead);
-
+            
             imageUrl = recieve_url;
-
+            
             var recognizeResponse = client.Recognize(imageUrl);
-            if(recognizeResponse.Contains("subject_id"))
+           
+            if (recognizeResponse.Contains("subject_id"))
             {
                 int _index = recognizeResponse.IndexOf(':');
                 recognizeResponse = recognizeResponse.Substring(_index + 1);
@@ -666,7 +702,15 @@ namespace KinBoard
                 recognizeResponse = "";
             }
             // Get the recognized user ID
+           
             return recognizeResponse;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            screen_setting new_ = new screen_setting();
+            this.SetVisibleCore(false);
+            new_.Show();
         }
     }
 }

@@ -73,10 +73,10 @@ namespace KinBoard
              mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
              Cursor.Position = new Point(prev_x, prev_y);
              mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-         //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
              Cursor.Position = new Point(x, y);
              mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-         //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
              MainForm.slideShowView.DrawLine(0, 0, 10, 10);
 
             }
@@ -103,10 +103,10 @@ namespace KinBoard
             mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
             Cursor.Position = new Point(prev_x, prev_y);
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-            //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
             Cursor.Position = new Point(x, y);
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-            //    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
             MainForm.slideShowView.DrawLine(0, 0, 10, 10);
 
         }

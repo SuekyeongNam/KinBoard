@@ -39,7 +39,8 @@ namespace KinBoard
         private double ratio = 0;
         private OpenCvSharp.CPlusPlus.Point[] _point = new OpenCvSharp.CPlusPlus.Point[2];
         private int count = 0;
-        private int IsBtnClick = 0;
+        private int IsBtnClick_1 = 0;
+        private int IsBtnClick_2 = 0;
 
         private double x_ratio;
         private double y_ratio;
@@ -112,28 +113,25 @@ namespace KinBoard
                             OpenCvSharp.CPlusPlus.Point R = new OpenCvSharp.CPlusPlus.Point(R_x, R_y);
                             OpenCvSharp.CPlusPlus.Point L = new OpenCvSharp.CPlusPlus.Point(L_x, L_y);
 
-                            if (IsBtnClick == 1)
+                            if (IsBtnClick_1 == 1)
                             {
                                 _skeleton.set_body(body);
                                 _skeleton.set_id(1);
                                 _skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
                                 _skeleton.set_Hands(L, R);
                                 depth_location = body.Joints[JointType.HandRight].Position.Z;
-                                count++;
-                                IsBtnClick = 0;
-
-                                // 다음 창으로 넘어감
-                                if (count == 2)
-                                {
-                                    _point[0] = _skeleton.get_RHandPoint(0);
-                                    _point[1] = _skeleton.get_RHandPoint(1);
-                                    ratio = _point[0].X - _point[1].X;
-                                    ratio = Math.Abs(ratio);
-                                    set_ratio();
-                                    MainForm _new = new MainForm(x_ratio, y_ratio, depth_location, real_start_x, real_start_y);
-                                    this.SetVisibleCore(false);
-                                    _new.Show();
-                                }
+                                _point[0] = _skeleton.get_RHandPoint(0);
+                                IsBtnClick_1 = 0;
+                            }
+                            else if(IsBtnClick_2 == 1)
+                            {
+                                _skeleton.set_body(body);
+                                _skeleton.set_id(1);
+                                _skeleton.set_hand_state(body.HandRightState, body.HandLeftState);
+                                _skeleton.set_Hands(L, R);
+                                depth_location = body.Joints[JointType.HandRight].Position.Z;
+                                _point[1] = _skeleton.get_RHandPoint(1);
+                                IsBtnClick_2 = 0;
                             }
                         }
 
@@ -148,16 +146,7 @@ namespace KinBoard
             double height = ((double)540 / 960) * ratio;
 
             real_start_y = _point[1].Y - height;
-            //real_start_y = _point[0].Y;
-            //if(real_start_y < 0)
-            //{
-            //    real_start_y = 0;
-            //}
             real_start_x = _point[0].X;
-            //if(real_start_x < 0)
-            //{
-            //    real_start_x = 0;
-            //}
             x_ratio = (960 / (double)ratio);
             y_ratio = (540 / (double)height);
         }
@@ -165,7 +154,7 @@ namespace KinBoard
         private void button1_Click(object sender, EventArgs e)
         {
             // 손가락으로 인식
-            IsBtnClick = 1;
+            IsBtnClick_1 = 1;
         }
 
         private void screen_setting_Load(object sender, EventArgs e)
@@ -184,6 +173,22 @@ namespace KinBoard
             {
                 kinectSensor.Close();
             }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            ratio = _point[0].X - _point[1].X;
+            ratio = Math.Abs(ratio);
+
+            set_ratio();
+            MainForm _new = new MainForm(x_ratio, y_ratio, depth_location, real_start_x, real_start_y);
+            this.SetVisibleCore(false);
+            _new.Show();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            IsBtnClick_2 = 1;
         }
     }
 
