@@ -231,7 +231,6 @@ namespace KinBoard
         public string get_color_frame()
         {
             string id = "";
-            
             var colorFrame_ = this.colorFrameReader.AcquireLatestFrame();
             if (colorFrame_ != null)
             {
@@ -275,7 +274,7 @@ namespace KinBoard
                         // FileStream is IDisposable
                         using (FileStream fs = new FileStream(path, FileMode.Create))
                         {
-                            encoder.Save(fs);
+                            encoder.Save(fs); 
                         }
                     }
                     catch (IOException)
@@ -308,6 +307,7 @@ namespace KinBoard
                 skeletons[count_id].set_body(body);
                 skeletons[count_id].set_id(count_id);
                 skeletons[count_id].set_RHand(current_skeleton.get_RHand());
+                current_skeleton.set_id(count_id);
                 count_id++;
 
                 string filetext = "";
@@ -592,6 +592,7 @@ namespace KinBoard
                     if (id == "")
                     {
                         add_new_face();
+                        label_id.Text = current_skeleton.get_id().ToString();
                     }
                     else if(id == "-1")
                     {
@@ -676,9 +677,18 @@ namespace KinBoard
             }
 
             string image_path = "C:\\Users\\KHUNET\\Desktop\\NoMore\\KinBoard\\KinBoard\\frame\\1.jpg";
-         
-            //image 경로를 보내는 부분
-            NetworkStream nwStream = client_upload.GetStream();
+            Image bitmap = new Bitmap(image_path);
+            string base64;
+            ImageFormat format = ImageFormat.Png;
+            string formatExtension = "png";
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                bitmap.Save(ms, format);
+                base64 = Convert.ToBase64String(ms.ToArray());
+            }
+                //image 경로를 보내는 부분
+                NetworkStream nwStream = client_upload.GetStream();
             byte[] byteToSend = ASCIIEncoding.ASCII.GetBytes(image_path);
             nwStream.Write(byteToSend, 0, byteToSend.Length);
 
@@ -686,10 +696,15 @@ namespace KinBoard
             byte[] bytesToRead = new byte[client_upload.ReceiveBufferSize];
             int bytesRead = nwStream.Read(bytesToRead, 0, client_upload.ReceiveBufferSize);
             string recieve_url = Encoding.ASCII.GetString(bytesToRead, 0, bytesRead);
+
+            var recognizeResponse = "";
+            var temp = client.Detect(recieve_url);
+            if(temp.Images.Count != 0)
+            {
+                var face = temp.Images.First().Faces[0];
+                recognizeResponse = client.Recognize(recieve_url, face.topLeftX, face.topLeftY, face.width, face.height);
+            }
             
-            imageUrl = recieve_url;
-            
-            var recognizeResponse = client.Recognize(imageUrl);
            
             if (recognizeResponse.Contains("subject_id"))
             {
@@ -705,6 +720,7 @@ namespace KinBoard
            
             return recognizeResponse;
         }
+
 
         private void button1_Click(object sender, EventArgs e)
         {
